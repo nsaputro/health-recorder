@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Health Recorder</title>
+<style>
+:root {
+  --primary:       #2563eb;
+  --primary-bg:    #dbeafe;
+  --success:       #16a34a;
+  --success-bg:    #dcfce7;
+  --warning:       #b45309;
+  --warning-bg:    #fef3c7;
+  --danger:        #dc2626;
+  --danger-bg:     #fee2e2;
+  --gray-50:       #f9fafb;
+  --gray-100:      #f3f4f6;
+  --gray-200:      #e5e7eb;
+  --gray-400:      #9ca3af;
+  --gray-500:      #6b7280;
+  --gray-700:      #374151;
+  --gray-900:      #111827;
+  --radius:        8px;
+  --shadow:        0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--gray-50);color:var(--gray-900);font-size:14px;line-height:1.5}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.hdr{background:#fff;border-bottom:1px solid var(--gray-200);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:12px}
+.hdr h1{font-size:16px;font-weight:700;color:var(--primary);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.google-pill{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.on{background:var(--success)}.dot.off{background:var(--gray-200)}
+
+/* ── Tabs ───────────────────────────────────────────────────────────── */
+.tabs{background:#fff;border-bottom:1px solid var(--gray-200);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{padding:10px 16px;font-size:13px;font-weight:500;color:var(--gray-500);border:none;background:none;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* ── Content ────────────────────────────────────────────────────────── */
+.content{max-width:860px;margin:0 auto;padding:16px}
+.panel{display:none}.panel.active{display:block}
+
+/* ── Card ───────────────────────────────────────────────────────────── */
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:16px;margin-bottom:16px}
+.card-title{font-weight:600;font-size:14px;color:var(--gray-700);margin-bottom:12px}
+
+/* ── Stats grid ─────────────────────────────────────────────────────── */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+@media(min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--gray-200);padding:14px}
+.stat-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);margin-bottom:3px}
+.stat-val{font-size:22px;font-weight:700}
+.stat-sub{font-size:11px;color:var(--gray-400);margin-top:2px}
+
+/* ── Form ───────────────────────────────────────────────────────────── */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fg:last-of-type{margin-bottom:0}
+.fg label{font-size:12px;font-weight:500;color:var(--gray-700)}
+.fg label em{font-weight:400;color:var(--gray-400)}
+.fg input,.fg select,.fg textarea{padding:7px 10px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;width:100%;transition:border-color .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--primary)}
+.fg textarea{resize:vertical;min-height:56px}
+.hint{font-size:11px;color:var(--gray-400);margin-top:2px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:filter .15s}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:not(:disabled):hover{filter:brightness(.93)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-secondary{background:#fff;color:var(--gray-700);border:1px solid var(--gray-200)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:4px 9px;font-size:12px}
+.btn-block{width:100%}
+
+/* ── Collapsible form ───────────────────────────────────────────────── */
+.toggle-btn{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;cursor:pointer;font-size:14px;font-weight:600;color:var(--gray-700);padding:0}
+.form-body{display:none;margin-top:14px}
+.form-body.open{display:block}
+
+/* ── Badge ──────────────────────────────────────────────────────────── */
+.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;font-weight:500}
+.badge-success{background:var(--success-bg);color:var(--success)}
+.badge-warning{background:var(--warning-bg);color:var(--warning)}
+.badge-danger{background:var(--danger-bg);color:var(--danger)}
+.badge-gray{background:var(--gray-100);color:var(--gray-500)}
+.badge-blue{background:var(--primary-bg);color:var(--primary)}
+
+/* ── Table ──────────────────────────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:7px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);border-bottom:2px solid var(--gray-200);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--gray-50)}
+.act{display:flex;gap:8px}
+.act button{font-size:11px;color:var(--primary);background:none;border:none;cursor:pointer;padding:2px 0}
+.act button.del{color:var(--danger)}
+.act button:hover{text-decoration:underline}
+
+/* ── Alert ──────────────────────────────────────────────────────────── */
+.alert{padding:10px 14px;border-radius:6px;font-size:13px;margin-top:10px}
+.alert-success{background:var(--success-bg);color:var(--success)}
+.alert-error  {background:var(--danger-bg);color:var(--danger)}
+
+/* ── Filter row ─────────────────────────────────────────────────────── */
+.filter-row{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.filter-row select{flex:1;padding:7px 10px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px}
+
+/* ── Google connected card ──────────────────────────────────────────── */
+.g-row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--success-bg);border-radius:var(--radius);border:1px solid #86efac}
+.g-avatar{width:36px;height:36px;border-radius:50%;background:var(--success);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0}
+.g-info{flex:1;min-width:0}
+.g-name{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g-email{font-size:11px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g-btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+/* ── Empty / loading ────────────────────────────────────────────────── */
+.empty,.loading{text-align:center;padding:28px;color:var(--gray-400);font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+  <h1>&#x1FAC0; Health Recorder</h1>
+  <div class="google-pill">
+    <span class="dot off" id="gDot"></span>
+    <span id="gLabel" style="color:var(--gray-500)">Not connected</span>
+  </div>
+</div>
+
+<!-- Tab bar -->
+<nav class="tabs">
+  <button class="tab active" onclick="go('overview')">Overview</button>
+  <button class="tab"        onclick="go('weight')">Weight</button>
+  <button class="tab"        onclick="go('labs')">Lab Results</button>
+  <button class="tab"        onclick="go('vitals')">Vital Signs</button>
+  <button class="tab"        onclick="go('settings')">Settings</button>
+</nav>
+
+<main class="content">
+
+<!-- ═══ OVERVIEW ═══════════════════════════════════════════════════════ -->
+<section id="panel-overview" class="panel active">
+  <div class="stats" id="statsGrid"></div>
+  <div class="card">
+    <div class="card-title">Recent Lab Results</div>
+    <div id="overviewLabs"></div>
+  </div>
+</section>
+
+<!-- ═══ WEIGHT ═══════════════════════════════════════════════════════════ -->
+<section id="panel-weight" class="panel">
+  <div class="card">
+    <button class="toggle-btn" onclick="toggle('bmForm','bmArrow')">
+      <span>&#x2795; Add Weight Entry</span><span id="bmArrow">&#x25BC;</span>
+    </button>
+    <div class="form-body" id="bmForm">
+      <form id="bmFrm">
+        <div class="fg"><label>Measured At</label><input type="datetime-local" id="bm_at" required></div>
+        <div class="row2">
+          <div class="fg"><label>Weight (kg)</label><input type="number" step=".1" min="1" id="bm_wt" placeholder="e.g. 72.5" required></div>
+          <div class="fg"><label>Height (cm) <em>optional</em></label><input type="number" step=".1" min="1" id="bm_ht" placeholder="e.g. 170"></div>
+        </div>
+        <div class="fg"><label>Notes <em>optional</em></label><textarea id="bm_notes" placeholder="Any context…"></textarea></div>
+        <button type="submit" class="btn btn-primary btn-block" id="bmBtn">Save Entry</button>
+      </form>
+      <div id="bmAlert"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Weight History</div>
+    <div id="weightTbl" class="loading">Loading…</div>
+  </div>
+</section>
+
+<!-- ═══ LAB RESULTS ═══════════════════════════════════════════════════════ -->
+<section id="panel-labs" class="panel">
+  <div class="card">
+    <button class="toggle-btn" onclick="toggle('lrForm','lrArrow')">
+      <span>&#x2795; Add Lab Result</span><span id="lrArrow">&#x25BC;</span>
+    </button>
+    <div class="form-body" id="lrForm">
+      <form id="lrFrm">
+        <div class="fg"><label>Measured At</label><input type="datetime-local" id="lr_at" required></div>
+        <div class="fg"><label>Test Type</label>
+          <select id="lr_type" onchange="onTypeChange()" required><option value="">Select…</option></select>
+        </div>
+        <div class="row2">
+          <div class="fg">
+            <label>Value</label>
+            <input type="number" step=".01" id="lr_val" placeholder="e.g. 180" required>
+            <span class="hint" id="lr_hint"></span>
+          </div>
+          <div class="fg"><label>Unit</label><input type="text" id="lr_unit" placeholder="mg/dL"></div>
+        </div>
+        <div class="fg"><label>Lab Name <em>optional</em></label><input type="text" id="lr_lab" placeholder="e.g. City Lab"></div>
+        <div class="fg"><label>Notes <em>optional</em></label><textarea id="lr_notes" placeholder="Fasting? Medication?"></textarea></div>
+        <button type="submit" class="btn btn-primary btn-block" id="lrBtn">Save Result</button>
+      </form>
+      <div id="lrAlert"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Lab Results</div>
+    <div class="filter-row">
+      <select id="labFilter" onchange="renderLabs()"><option value="">All test types</option></select>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('labFilter').value='';renderLabs()">Clear</button>
+    </div>
+    <div id="labTbl" class="loading">Loading…</div>
+  </div>
+</section>
+
+<!-- ═══ VITAL SIGNS ═══════════════════════════════════════════════════════ -->
+<section id="panel-vitals" class="panel">
+  <div class="card">
+    <button class="toggle-btn" onclick="toggle('vsForm','vsArrow')">
+      <span>&#x2795; Add Vitals Reading</span><span id="vsArrow">&#x25BC;</span>
+    </button>
+    <div class="form-body" id="vsForm">
+      <form id="vsFrm">
+        <div class="fg"><label>Measured At</label><input type="datetime-local" id="vs_at" required></div>
+        <div class="fg">
+          <label>Blood Pressure</label>
+          <div class="row2">
+            <input type="number" min="60" max="250" id="vs_sys" placeholder="Systolic (mmHg)">
+            <input type="number" min="40" max="150" id="vs_dia" placeholder="Diastolic (mmHg)">
+          </div>
+          <span class="hint">Normal: ≤ 120/80 mmHg</span>
+        </div>
+        <div class="fg">
+          <label>Heart Rate <em>optional</em></label>
+          <input type="number" min="30" max="250" id="vs_hr" placeholder="bpm (e.g. 72)">
+          <span class="hint">Normal resting: 60–100 bpm</span>
+        </div>
+        <div class="fg"><label>Notes <em>optional</em></label><textarea id="vs_notes" placeholder="Resting? After exercise?"></textarea></div>
+        <button type="submit" class="btn btn-primary btn-block" id="vsBtn">Save Reading</button>
+      </form>
+      <div id="vsAlert"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Vitals History</div>
+    <div id="vitalTbl" class="loading">Loading…</div>
+  </div>
+</section>
+
+<!-- ═══ SETTINGS ═══════════════════════════════════════════════════════════ -->
+<section id="panel-settings" class="panel">
+  <div class="card">
+    <div class="card-title">Google Integration</div>
+    <div id="gSection"></div>
+  </div>
+  <div id="settingsAlert"></div>
+  <div class="card">
+    <div class="card-title">Setup Guide</div>
+    <p style="font-size:13px;margin-bottom:8px;color:var(--gray-700)">To enable Google sync:</p>
+    <ol style="font-size:13px;color:var(--gray-700);padding-left:20px;line-height:2">
+      <li>Open <a href="https://console.cloud.google.com/" target="_blank" style="color:var(--primary)">Google Cloud Console</a></li>
+      <li>Enable <strong>Google Fitness API</strong>, <strong>Google Sheets API</strong>, and <strong>Google Drive API</strong></li>
+      <li>Create OAuth 2.0 credentials → Web application</li>
+      <li>Add authorized redirect URI: <code style="background:var(--gray-100);padding:1px 5px;border-radius:4px">http://&lt;ha-ip&gt;:8099/auth/google/callback</code></li>
+      <li>Set credentials in addon options (⚙️ Configuration tab in HA)</li>
+      <li>Restart addon, then click <strong>Connect Google Account</strong> above</li>
+    </ol>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   State
+══════════════════════════════════════════════════════════════════════ */
+const S = {
+  weights: [], labs: [], vitals: [],
+  labTypes: [], labTypeMap: {},
+  google: null,
+  activeTab: 'overview',
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   Reference ranges
+══════════════════════════════════════════════════════════════════════ */
+const REF = {
+  cholesterol_total: { hi_normal:200, hi_border:239 },
+  cholesterol_ldl:   { hi_normal:100, hi_border:129 },
+  cholesterol_hdl:   { lo_good:40, higher_better:true },
+  triglycerides:     { hi_normal:150, hi_border:199 },
+  glucose_fasting:   { lo_normal:70, hi_normal:99,  hi_border:125 },
+  glucose_random:    { hi_normal:140, hi_border:199 },
+  glucose_hba1c:     { hi_normal:5.7, hi_border:6.4 },
+  uric_acid:         { hi_normal:6.0, hi_border:7.0 },
+  creatinine:        { lo_normal:0.6, hi_normal:1.2 },
+  hemoglobin:        { lo_normal:12,  hi_normal:17.5 },
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   Utilities
+══════════════════════════════════════════════════════════════════════ */
+async function req(method, url, body) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if (r.status === 204) return null;
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.detail || 'Request failed');
+  return d;
+}
+
+function fmt(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function fmtDT(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function now() {
+  const d = new Date(); d.setSeconds(0,0);
+  return d.toISOString().slice(0,16);
+}
+const b = (cls,txt) => `<span class="badge badge-${cls}">${txt}</span>`;
+
+function labBadge(type, val) {
+  const r = REF[type]; if (!r) return '';
+  if (r.higher_better) return val >= (r.lo_good||0) ? b('success','Good') : b('danger','Low');
+  if (r.lo_normal && val < r.lo_normal) return b('warning','Low');
+  if (r.hi_normal && val <= r.hi_normal) return b('success','Normal');
+  if (r.hi_border && val <= r.hi_border) return b('warning','Borderline');
+  return b('danger','High');
+}
+function bpBadge(s, d) {
+  if (!s||!d) return '';
+  if (s<120&&d<80) return b('success','Normal');
+  if (s<130&&d<80) return b('warning','Elevated');
+  if (s<140||d<90) return b('warning','Stage 1');
+  return b('danger','Stage 2');
+}
+function bmiBadge(v) {
+  if (!v) return '';
+  if (v<18.5) return b('warning','Underweight');
+  if (v<25)   return b('success','Normal');
+  if (v<30)   return b('warning','Overweight');
+  return b('danger','Obese');
+}
+function syncBadges(fit, sheets) {
+  return (fit ? b('success','Fit') : b('gray','Fit')) + ' ' +
+         (sheets ? b('success','Sheets') : b('gray','Sheets'));
+}
+
+function showAlert(id, type, msg, ms=4000) {
+  const el = document.getElementById(id);
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  if (ms) setTimeout(()=>{ el.innerHTML=''; }, ms);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Navigation
+══════════════════════════════════════════════════════════════════════ */
+function go(tab) {
+  S.activeTab = tab;
+  document.querySelectorAll('.tab').forEach((b,i)=>{
+    const names=['overview','weight','labs','vitals','settings'];
+    b.classList.toggle('active', names[i]===tab);
+  });
+  document.querySelectorAll('.panel').forEach(p=>{
+    p.classList.toggle('active', p.id==='panel-'+tab);
+  });
+}
+
+function toggle(formId, arrowId) {
+  const f = document.getElementById(formId);
+  const a = document.getElementById(arrowId);
+  const open = f.classList.toggle('open');
+  a.innerHTML = open ? '&#x25B2;' : '&#x25BC;';
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Data loading
+══════════════════════════════════════════════════════════════════════ */
+async function loadAll() {
+  await Promise.allSettled([
+    load('weights', '/health/body-metrics?limit=60'),
+    load('vitals',  '/health/vital-signs?limit=60'),
+    load('labs',    '/health/lab-results?limit=200'),
+    loadLabTypes(),
+    loadGoogle(),
+  ]);
+  renderOverview();
+}
+
+async function load(key, url) {
+  try { S[key] = await req('GET', url); render(key); } catch(e) { console.warn(key, e); }
+}
+function render(key) {
+  if (key==='weights') renderWeights();
+  else if (key==='labs') renderLabs();
+  else if (key==='vitals') renderVitals();
+}
+
+async function loadLabTypes() {
+  try {
+    S.labTypes = await req('GET', '/health/lab-types');
+    S.labTypeMap = Object.fromEntries(S.labTypes.map(t=>[t.test_type, t]));
+    const sel  = document.getElementById('lr_type');
+    const filt = document.getElementById('labFilter');
+    S.labTypes.forEach(t => {
+      sel.innerHTML  += `<option value="${t.test_type}">${t.display_name}</option>`;
+      filt.innerHTML += `<option value="${t.test_type}">${t.display_name}</option>`;
+    });
+    if (S.labTypes[0]) onTypeChange();
+  } catch(e) { console.warn('labTypes', e); }
+}
+
+async function loadGoogle() {
+  try { S.google = await req('GET', '/auth/google/status'); }
+  catch { S.google = null; }
+  renderGoogle();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Overview
+══════════════════════════════════════════════════════════════════════ */
+function renderOverview() {
+  const w = S.weights[0], v = S.vitals[0];
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat">
+      <div class="stat-lbl">Latest Weight</div>
+      <div class="stat-val">${w ? w.weight_kg+' kg' : '—'}</div>
+      <div class="stat-sub">${w ? fmt(w.measured_at) : 'No data yet'}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">BMI</div>
+      <div class="stat-val">${w?.bmi ?? '—'}</div>
+      <div class="stat-sub">${w?.bmi ? ['','Underweight','Normal weight','Overweight','Obese'][[w.bmi<18.5?1:w.bmi<25?2:w.bmi<30?3:4]] : ''}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Blood Pressure</div>
+      <div class="stat-val">${v?.systolic_bp&&v?.diastolic_bp ? v.systolic_bp+'/'+v.diastolic_bp : '—'}</div>
+      <div class="stat-sub">${v ? 'mmHg · '+fmt(v.measured_at) : 'No data yet'}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Heart Rate</div>
+      <div class="stat-val">${v?.heart_rate ?? '—'}</div>
+      <div class="stat-sub">${v?.heart_rate ? 'bpm' : 'No data yet'}</div>
+    </div>
+  `;
+  const recent = S.labs.slice(0,8);
+  document.getElementById('overviewLabs').innerHTML = !recent.length
+    ? '<div class="empty">No lab results yet.</div>'
+    : `<div class="tbl-wrap"><table>
+        <thead><tr><th>Date</th><th>Test</th><th>Result</th><th>Status</th></tr></thead>
+        <tbody>${recent.map(r=>`<tr>
+          <td>${fmt(r.measured_at)}</td>
+          <td>${S.labTypeMap[r.test_type]?.display_name??r.test_type}</td>
+          <td><strong>${r.value} ${r.unit}</strong></td>
+          <td>${labBadge(r.test_type,r.value)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Weight table
+══════════════════════════════════════════════════════════════════════ */
+function renderWeights() {
+  const el = document.getElementById('weightTbl');
+  if (!S.weights.length) { el.innerHTML='<div class="empty">No entries yet.</div>'; return; }
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Date/Time</th><th>Weight</th><th>BMI</th><th>Sync</th><th>Actions</th></tr></thead>
+    <tbody>${S.weights.map(r=>`<tr>
+      <td>${fmtDT(r.measured_at)}</td>
+      <td><strong>${r.weight_kg} kg</strong></td>
+      <td>${r.bmi ? r.bmi+' '+bmiBadge(r.bmi) : '—'}</td>
+      <td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>
+      <td><div class="act">
+        <button onclick="syncRec('body-metrics',${r.id})">Sync</button>
+        <button class="del" onclick="delRec('body-metrics',${r.id})">Delete</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Lab results table
+══════════════════════════════════════════════════════════════════════ */
+function renderLabs() {
+  const f = document.getElementById('labFilter').value;
+  const rows = f ? S.labs.filter(r=>r.test_type===f) : S.labs;
+  const el = document.getElementById('labTbl');
+  if (!rows.length) { el.innerHTML='<div class="empty">No results yet.</div>'; return; }
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Date</th><th>Test</th><th>Result</th><th>Status</th><th>Lab</th><th>Sync</th><th>Actions</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td>${fmt(r.measured_at)}</td>
+      <td>${S.labTypeMap[r.test_type]?.display_name??r.test_type}</td>
+      <td><strong>${r.value} ${r.unit}</strong></td>
+      <td>${labBadge(r.test_type,r.value)}</td>
+      <td style="color:var(--gray-500)">${r.lab_name??'—'}</td>
+      <td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>
+      <td><div class="act">
+        <button onclick="syncRec('lab-results',${r.id})">Sync</button>
+        <button class="del" onclick="delRec('lab-results',${r.id})">Delete</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Vital signs table
+══════════════════════════════════════════════════════════════════════ */
+function renderVitals() {
+  const el = document.getElementById('vitalTbl');
+  if (!S.vitals.length) { el.innerHTML='<div class="empty">No readings yet.</div>'; return; }
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Date/Time</th><th>Blood Pressure</th><th>Status</th><th>Heart Rate</th><th>Sync</th><th>Actions</th></tr></thead>
+    <tbody>${S.vitals.map(r=>`<tr>
+      <td>${fmtDT(r.measured_at)}</td>
+      <td>${r.systolic_bp&&r.diastolic_bp ? '<strong>'+r.systolic_bp+'/'+r.diastolic_bp+'</strong> mmHg' : '—'}</td>
+      <td>${bpBadge(r.systolic_bp,r.diastolic_bp)}</td>
+      <td>${r.heart_rate ? r.heart_rate+' bpm' : '—'}</td>
+      <td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>
+      <td><div class="act">
+        <button onclick="syncRec('vital-signs',${r.id})">Sync</button>
+        <button class="del" onclick="delRec('vital-signs',${r.id})">Delete</button>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Google status
+══════════════════════════════════════════════════════════════════════ */
+function renderGoogle() {
+  const dot   = document.getElementById('gDot');
+  const label = document.getElementById('gLabel');
+  const sec   = document.getElementById('gSection');
+  const g = S.google;
+
+  if (g) {
+    dot.className = 'dot on';
+    label.textContent = g.user_email;
+    label.style.color = 'var(--success)';
+    sec.innerHTML = `
+      <div class="g-row">
+        <div class="g-avatar">${(g.user_name||g.user_email)[0].toUpperCase()}</div>
+        <div class="g-info">
+          <div class="g-name">${g.user_name??g.user_email}</div>
+          <div class="g-email">${g.user_email}</div>
+        </div>
+        ${b('success','Connected')}
+      </div>
+      ${g.sheets_spreadsheet_id
+        ? `<p style="margin-top:10px;font-size:13px">📊 <a href="https://docs.google.com/spreadsheets/d/${g.sheets_spreadsheet_id}" target="_blank" style="color:var(--primary)">Open Google Sheets</a></p>`
+        : ''}
+      <div class="g-btns">
+        <button class="btn btn-primary" onclick="syncAll(this)">&#x2191; Sync All Data</button>
+        <button class="btn btn-danger"  onclick="disconnectGoogle()">Disconnect</button>
+      </div>`;
+  } else {
+    dot.className = 'dot off';
+    label.textContent = 'Not connected';
+    label.style.color = 'var(--gray-500)';
+    sec.innerHTML = `
+      <p style="font-size:13px;color:var(--gray-700);margin-bottom:10px">
+        Connect your Google account to sync health data to Google Fit and Google Sheets.
+      </p>
+      <ul style="font-size:13px;color:var(--gray-500);list-style:disc;padding-left:20px;margin-bottom:14px;line-height:1.9">
+        <li><strong>Google Fit</strong> — weight, blood pressure, heart rate, blood glucose</li>
+        <li><strong>Google Sheets</strong> — all metrics including cholesterol, uric acid, HbA1c</li>
+      </ul>
+      <a href="/auth/google/login" class="btn btn-primary">Connect Google Account</a>`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Form submissions
+══════════════════════════════════════════════════════════════════════ */
+document.getElementById('bmFrm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('bmBtn');
+  btn.disabled=true; btn.textContent='Saving…';
+  try {
+    await req('POST','/health/body-metrics',{
+      measured_at: document.getElementById('bm_at').value,
+      weight_kg:   parseFloat(document.getElementById('bm_wt').value),
+      height_cm:   document.getElementById('bm_ht').value  ? parseFloat(document.getElementById('bm_ht').value)  : null,
+      notes:       document.getElementById('bm_notes').value || null,
+    });
+    showAlert('bmAlert','success','✓ Entry saved!');
+    e.target.reset();
+    document.getElementById('bm_at').value = now();
+    await load('weights','/health/body-metrics?limit=60');
+    renderOverview();
+  } catch(err) { showAlert('bmAlert','error','✗ '+err.message); }
+  finally { btn.disabled=false; btn.textContent='Save Entry'; }
+});
+
+document.getElementById('lrFrm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('lrBtn');
+  btn.disabled=true; btn.textContent='Saving…';
+  try {
+    await req('POST','/health/lab-results',{
+      measured_at: document.getElementById('lr_at').value,
+      test_type:   document.getElementById('lr_type').value,
+      value:       parseFloat(document.getElementById('lr_val').value),
+      unit:        document.getElementById('lr_unit').value || null,
+      lab_name:    document.getElementById('lr_lab').value  || null,
+      notes:       document.getElementById('lr_notes').value || null,
+    });
+    showAlert('lrAlert','success','✓ Result saved!');
+    e.target.reset();
+    document.getElementById('lr_at').value = now();
+    await load('labs','/health/lab-results?limit=200');
+    renderOverview();
+  } catch(err) { showAlert('lrAlert','error','✗ '+err.message); }
+  finally { btn.disabled=false; btn.textContent='Save Result'; }
+});
+
+document.getElementById('vsFrm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('vsBtn');
+  btn.disabled=true; btn.textContent='Saving…';
+  try {
+    await req('POST','/health/vital-signs',{
+      measured_at:  document.getElementById('vs_at').value,
+      systolic_bp:  parseInt(document.getElementById('vs_sys').value)||null,
+      diastolic_bp: parseInt(document.getElementById('vs_dia').value)||null,
+      heart_rate:   parseInt(document.getElementById('vs_hr').value)||null,
+      notes:        document.getElementById('vs_notes').value || null,
+    });
+    showAlert('vsAlert','success','✓ Reading saved!');
+    e.target.reset();
+    document.getElementById('vs_at').value = now();
+    await load('vitals','/health/vital-signs?limit=60');
+    renderOverview();
+  } catch(err) { showAlert('vsAlert','error','✗ '+err.message); }
+  finally { btn.disabled=false; btn.textContent='Save Reading'; }
+});
+
+/* ══════════════════════════════════════════════════════════════════════
+   Sync / delete
+══════════════════════════════════════════════════════════════════════ */
+async function syncRec(type, id) {
+  try {
+    await req('POST',`/sync/${type}/${id}`);
+    if      (type==='body-metrics') await load('weights','/health/body-metrics?limit=60');
+    else if (type==='lab-results')  await load('labs',   '/health/lab-results?limit=200');
+    else                            await load('vitals',  '/health/vital-signs?limit=60');
+  } catch(e) { alert('Sync failed: '+e.message); }
+}
+
+async function syncAll(btn) {
+  btn.disabled=true; btn.textContent='⏳ Syncing…';
+  try {
+    const r = await req('POST','/sync/all');
+    const fit = r.google_fit, sh = r.google_sheets;
+    showAlert('settingsAlert','success',
+      `✓ Sync complete! Fit → weight: ${fit.body_metrics}, vitals: ${fit.vital_signs}, labs: ${fit.lab_results} | Sheets → ${sh.body_metrics+sh.lab_results+sh.vital_signs} total records`);
+    await loadAll();
+  } catch(e) { showAlert('settingsAlert','error','✗ Sync failed: '+e.message); }
+  finally { btn.disabled=false; btn.textContent='↑ Sync All Data'; }
+}
+
+async function delRec(type, id) {
+  if (!confirm('Delete this record?')) return;
+  try {
+    await req('DELETE',`/health/${type}/${id}`);
+    if      (type==='body-metrics') { S.weights = S.weights.filter(r=>r.id!==id); renderWeights(); }
+    else if (type==='lab-results')  { S.labs    = S.labs.filter(r=>r.id!==id);    renderLabs(); }
+    else                            { S.vitals  = S.vitals.filter(r=>r.id!==id);  renderVitals(); }
+    renderOverview();
+  } catch(e) { alert('Delete failed: '+e.message); }
+}
+
+async function disconnectGoogle() {
+  if (!confirm('Disconnect Google account? Your local data will be kept.')) return;
+  try { await req('DELETE','/auth/google/disconnect'); S.google=null; renderGoogle(); }
+  catch(e) { alert('Failed: '+e.message); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Lab unit / hint helper
+══════════════════════════════════════════════════════════════════════ */
+function onTypeChange() {
+  const t = S.labTypeMap[document.getElementById('lr_type').value];
+  if (!t) return;
+  document.getElementById('lr_unit').value = t.unit;
+  const r = REF[t.test_type];
+  if (r) {
+    const parts = [];
+    if (r.lo_normal) parts.push(`Low < ${r.lo_normal}`);
+    if (r.hi_normal && r.hi_normal<999) parts.push(`Normal ≤ ${r.hi_normal}`);
+    if (r.hi_border && r.hi_border<999) parts.push(`Borderline ≤ ${r.hi_border}`);
+    document.getElementById('lr_hint').textContent = parts.join(' · ') + (parts.length ? ' '+t.unit : '');
+  } else {
+    document.getElementById('lr_hint').textContent = '';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   OAuth query-param handling
+══════════════════════════════════════════════════════════════════════ */
+function handleParams() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('google_connected')==='1') {
+    go('settings');
+    showAlert('settingsAlert','success','✓ Google account connected successfully!');
+    history.replaceState({},'',location.pathname);
+  }
+  if (p.get('google_error')) {
+    go('settings');
+    showAlert('settingsAlert','error','✗ Google error: '+p.get('google_error'));
+    history.replaceState({},'',location.pathname);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Init
+══════════════════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('bm_at').value = now();
+  document.getElementById('lr_at').value = now();
+  document.getElementById('vs_at').value = now();
+  handleParams();
+  await loadAll();
+});
+</script>
+</body>
+</html>

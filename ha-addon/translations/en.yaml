@@ -1,0 +1,16 @@
+configuration:
+  google_client_id:
+    name: Google OAuth Client ID
+    description: >-
+      OAuth 2.0 Client ID from Google Cloud Console.
+      Leave blank to disable Google sync.
+  google_client_secret:
+    name: Google OAuth Client Secret
+    description: >-
+      OAuth 2.0 Client Secret from Google Cloud Console.
+  google_redirect_uri:
+    name: Google OAuth Redirect URI
+    description: >-
+      Must match the redirect URI registered in Google Cloud Console.
+      Use http://<your-ha-ip>:8099/auth/google/callback
+      (the direct port, NOT the ingress URL).
