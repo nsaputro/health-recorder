@@ -385,9 +385,9 @@ function toggle(formId, arrowId) {
 ══════════════════════════════════════════════════════════════════════ */
 async function loadAll() {
   await Promise.allSettled([
-    load('weights', '/health/body-metrics?limit=60'),
-    load('vitals',  '/health/vital-signs?limit=60'),
-    load('labs',    '/health/lab-results?limit=200'),
+    load('weights', 'health/body-metrics?limit=60'),
+    load('vitals',  'health/vital-signs?limit=60'),
+    load('labs',    'health/lab-results?limit=200'),
     loadLabTypes(),
     loadGoogle(),
   ]);
@@ -405,7 +405,7 @@ function render(key) {
 
 async function loadLabTypes() {
   try {
-    S.labTypes = await req('GET', '/health/lab-types');
+    S.labTypes = await req('GET', 'health/lab-types');
     S.labTypeMap = Object.fromEntries(S.labTypes.map(t=>[t.test_type, t]));
     const sel  = document.getElementById('lr_type');
     const filt = document.getElementById('labFilter');
@@ -418,7 +418,7 @@ async function loadLabTypes() {
 }
 
 async function loadGoogle() {
-  try { S.google = await req('GET', '/auth/google/status'); }
+  try { S.google = await req('GET', 'auth/google/status'); }
   catch { S.google = null; }
   renderGoogle();
 }
@@ -573,7 +573,7 @@ function renderGoogle() {
         <li><strong>Google Fit</strong> — weight, blood pressure, heart rate, blood glucose</li>
         <li><strong>Google Sheets</strong> — all metrics including cholesterol, uric acid, HbA1c</li>
       </ul>
-      <a href="/auth/google/login" class="btn btn-primary">Connect Google Account</a>`;
+      <a href="auth/google/login" class="btn btn-primary">Connect Google Account</a>`;
   }
 }
 
@@ -585,7 +585,7 @@ document.getElementById('bmFrm').addEventListener('submit', async e => {
   const btn = document.getElementById('bmBtn');
   btn.disabled=true; btn.textContent='Saving…';
   try {
-    await req('POST','/health/body-metrics',{
+    await req('POST','health/body-metrics',{
       measured_at: document.getElementById('bm_at').value,
       weight_kg:   parseFloat(document.getElementById('bm_wt').value),
       height_cm:   document.getElementById('bm_ht').value  ? parseFloat(document.getElementById('bm_ht').value)  : null,
@@ -594,7 +594,7 @@ document.getElementById('bmFrm').addEventListener('submit', async e => {
     showAlert('bmAlert','success','✓ Entry saved!');
     e.target.reset();
     document.getElementById('bm_at').value = now();
-    await load('weights','/health/body-metrics?limit=60');
+    await load('weights','health/body-metrics?limit=60');
     renderOverview();
   } catch(err) { showAlert('bmAlert','error','✗ '+err.message); }
   finally { btn.disabled=false; btn.textContent='Save Entry'; }
@@ -605,7 +605,7 @@ document.getElementById('lrFrm').addEventListener('submit', async e => {
   const btn = document.getElementById('lrBtn');
   btn.disabled=true; btn.textContent='Saving…';
   try {
-    await req('POST','/health/lab-results',{
+    await req('POST','health/lab-results',{
       measured_at: document.getElementById('lr_at').value,
       test_type:   document.getElementById('lr_type').value,
       value:       parseFloat(document.getElementById('lr_val').value),
@@ -616,7 +616,7 @@ document.getElementById('lrFrm').addEventListener('submit', async e => {
     showAlert('lrAlert','success','✓ Result saved!');
     e.target.reset();
     document.getElementById('lr_at').value = now();
-    await load('labs','/health/lab-results?limit=200');
+    await load('labs','health/lab-results?limit=200');
     renderOverview();
   } catch(err) { showAlert('lrAlert','error','✗ '+err.message); }
   finally { btn.disabled=false; btn.textContent='Save Result'; }
@@ -627,7 +627,7 @@ document.getElementById('vsFrm').addEventListener('submit', async e => {
   const btn = document.getElementById('vsBtn');
   btn.disabled=true; btn.textContent='Saving…';
   try {
-    await req('POST','/health/vital-signs',{
+    await req('POST','health/vital-signs',{
       measured_at:  document.getElementById('vs_at').value,
       systolic_bp:  parseInt(document.getElementById('vs_sys').value)||null,
       diastolic_bp: parseInt(document.getElementById('vs_dia').value)||null,
@@ -637,7 +637,7 @@ document.getElementById('vsFrm').addEventListener('submit', async e => {
     showAlert('vsAlert','success','✓ Reading saved!');
     e.target.reset();
     document.getElementById('vs_at').value = now();
-    await load('vitals','/health/vital-signs?limit=60');
+    await load('vitals','health/vital-signs?limit=60');
     renderOverview();
   } catch(err) { showAlert('vsAlert','error','✗ '+err.message); }
   finally { btn.disabled=false; btn.textContent='Save Reading'; }
@@ -648,17 +648,17 @@ document.getElementById('vsFrm').addEventListener('submit', async e => {
 ══════════════════════════════════════════════════════════════════════ */
 async function syncRec(type, id) {
   try {
-    await req('POST',`/sync/${type}/${id}`);
-    if      (type==='body-metrics') await load('weights','/health/body-metrics?limit=60');
-    else if (type==='lab-results')  await load('labs',   '/health/lab-results?limit=200');
-    else                            await load('vitals',  '/health/vital-signs?limit=60');
+    await req('POST',`sync/${type}/${id}`);
+    if      (type==='body-metrics') await load('weights','health/body-metrics?limit=60');
+    else if (type==='lab-results')  await load('labs',   'health/lab-results?limit=200');
+    else                            await load('vitals',  'health/vital-signs?limit=60');
   } catch(e) { alert('Sync failed: '+e.message); }
 }
 
 async function syncAll(btn) {
   btn.disabled=true; btn.textContent='⏳ Syncing…';
   try {
-    const r = await req('POST','/sync/all');
+    const r = await req('POST','sync/all');
     const fit = r.google_fit, sh = r.google_sheets;
     showAlert('settingsAlert','success',
       `✓ Sync complete! Fit → weight: ${fit.body_metrics}, vitals: ${fit.vital_signs}, labs: ${fit.lab_results} | Sheets → ${sh.body_metrics+sh.lab_results+sh.vital_signs} total records`);
@@ -670,7 +670,7 @@ async function syncAll(btn) {
 async function delRec(type, id) {
   if (!confirm('Delete this record?')) return;
   try {
-    await req('DELETE',`/health/${type}/${id}`);
+    await req('DELETE',`health/${type}/${id}`);
     if      (type==='body-metrics') { S.weights = S.weights.filter(r=>r.id!==id); renderWeights(); }
     else if (type==='lab-results')  { S.labs    = S.labs.filter(r=>r.id!==id);    renderLabs(); }
     else                            { S.vitals  = S.vitals.filter(r=>r.id!==id);  renderVitals(); }
@@ -680,7 +680,7 @@ async function delRec(type, id) {
 
 async function disconnectGoogle() {
   if (!confirm('Disconnect Google account? Your local data will be kept.')) return;
-  try { await req('DELETE','/auth/google/disconnect'); S.google=null; renderGoogle(); }
+  try { await req('DELETE','auth/google/disconnect'); S.google=null; renderGoogle(); }
   catch(e) { alert('Failed: '+e.message); }
 }
 
