@@ -33,22 +33,29 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.version }}"
-            # Create and push the tag so subsequent steps can reference it
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag "v${TAG}"
-            git push origin "v${TAG}"
           else
             TAG="${GITHUB_REF_NAME#v}"   # strip leading "v" from tag push
           fi
+
           CFG=$(python3 -c "import yaml; print(yaml.safe_load(open('ha-addon/config.yaml'))['version'])")
           echo "Tag version:    $TAG"
           echo "config.yaml:    $CFG"
+
+          # Validate BEFORE creating any tag
           if [ "$TAG" != "$CFG" ]; then
             echo "::error::Tag version ($TAG) does not match config.yaml version ($CFG)."
             echo "::error::Update ha-addon/config.yaml before tagging."
             exit 1
           fi
+
+          # Versions match — now create and push the tag (workflow_dispatch only)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -f "v${TAG}"
+            git push -f origin "v${TAG}"
+          fi
+
           echo "version=$TAG" >> "$GITHUB_OUTPUT"
           echo "tag=v$TAG" >> "$GITHUB_OUTPUT"
 
@@ -155,14 +162,14 @@ jobs:
 
           ---
 
-          ## \U0001f3e0 Installation (Home Assistant)
+          ## 🏠 Installation (Home Assistant)
 
           1. Go to **Settings → Add-ons → Store → ⋮ → Repositories**
           2. Add: \`https://github.com/${REPO}\`
           3. Install **Health Recorder** and start it
           4. The **Health** panel appears in your HA sidebar
 
-          ## \U0001f433 Pre-built Docker images (ghcr.io)
+          ## 🐳 Pre-built Docker images (ghcr.io)
 
           | Architecture | Image |
           |---|---|
@@ -172,7 +179,7 @@ jobs:
           | armhf    | \`ghcr.io/${REPO}/armhf-health_recorder:${VERSION}\`    |
           | i386     | \`ghcr.io/${REPO}/i386-health_recorder:${VERSION}\`     |
 
-          ## \U0001f5a5️ Standalone (Docker Compose)
+          ## 🖥️ Standalone (Docker Compose)
 
           \`\`\`bash
           git clone https://github.com/${REPO}
