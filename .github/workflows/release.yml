@@ -4,9 +4,15 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"   # e.g. v1.0.0, v2.3.1
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (without 'v' prefix, e.g. 0.1.0)"
+        required: true
+        default: "0.1.0"
 
 permissions:
-  contents: write    # create GitHub release
+  contents: write    # create GitHub release + push tag
   packages: write    # push to ghcr.io
 
 jobs:
@@ -16,13 +22,25 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract & validate version
         id: ver
         run: |
-          TAG="${GITHUB_REF_NAME#v}"                   # strip leading "v"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.version }}"
+            # Create and push the tag so subsequent steps can reference it
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "v${TAG}"
+            git push origin "v${TAG}"
+          else
+            TAG="${GITHUB_REF_NAME#v}"   # strip leading "v" from tag push
+          fi
           CFG=$(python3 -c "import yaml; print(yaml.safe_load(open('ha-addon/config.yaml'))['version'])")
           echo "Tag version:    $TAG"
           echo "config.yaml:    $CFG"
@@ -32,6 +50,7 @@ jobs:
             exit 1
           fi
           echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          echo "tag=v$TAG" >> "$GITHUB_OUTPUT"
 
   # ── Build & push one image per architecture ───────────────────────────────────
   build-and-push:
@@ -60,6 +79,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-version.outputs.tag }}
 
       - name: Set up QEMU (for cross-platform builds)
         uses: docker/setup-qemu-action@v3
@@ -103,19 +124,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # needed for --generate-notes
+          fetch-depth: 0
+          ref: ${{ needs.check-version.outputs.tag }}
 
       - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.check-version.outputs.version }}
+          TAG: ${{ needs.check-version.outputs.tag }}
         run: |
-          gh release create "${{ github.ref_name }}" \
+          gh release create "${TAG}" \
             --title "Health Recorder v${VERSION}" \
             --generate-notes \
-            --notes-start-tag "$(git tag --sort=-version:refname | sed -n '2p')" \
+            --notes-start-tag "$(git tag --sort=-version:refname | grep -v "^${TAG}$" | head -n1)" \
             --verify-tag || \
-          gh release create "${{ github.ref_name }}" \
+          gh release create "${TAG}" \
             --title "Health Recorder v${VERSION}" \
             --generate-notes \
             --verify-tag
@@ -124,21 +147,22 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.check-version.outputs.version }}
+          TAG: ${{ needs.check-version.outputs.tag }}
           REPO: ${{ github.repository }}
         run: |
-          BODY=$(gh release view "${{ github.ref_name }}" --json body -q .body)
-          gh release edit "${{ github.ref_name }}" --notes "${BODY}
+          BODY=$(gh release view "${TAG}" --json body -q .body)
+          gh release edit "${TAG}" --notes "${BODY}
 
           ---
 
-          ## 🏠 Installation (Home Assistant)
+          ## \U0001f3e0 Installation (Home Assistant)
 
           1. Go to **Settings → Add-ons → Store → ⋮ → Repositories**
           2. Add: \`https://github.com/${REPO}\`
           3. Install **Health Recorder** and start it
           4. The **Health** panel appears in your HA sidebar
 
-          ## 🐳 Pre-built Docker images (ghcr.io)
+          ## \U0001f433 Pre-built Docker images (ghcr.io)
 
           | Architecture | Image |
           |---|---|
@@ -148,7 +172,7 @@ jobs:
           | armhf    | \`ghcr.io/${REPO}/armhf-health_recorder:${VERSION}\`    |
           | i386     | \`ghcr.io/${REPO}/i386-health_recorder:${VERSION}\`     |
 
-          ## 🖥️ Standalone (Docker Compose)
+          ## \U0001f5a5️ Standalone (Docker Compose)
 
           \`\`\`bash
           git clone https://github.com/${REPO}
