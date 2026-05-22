@@ -74,15 +74,6 @@ jobs:
           - arch: aarch64
             base: ghcr.io/home-assistant/aarch64-base-python:3.12-alpine3.20
             platform: linux/arm64
-          - arch: armv7
-            base: ghcr.io/home-assistant/armv7-base-python:3.12-alpine3.20
-            platform: linux/arm/v7
-          - arch: armhf
-            base: ghcr.io/home-assistant/armhf-base-python:3.12-alpine3.20
-            platform: linux/arm/v6
-          - arch: i386
-            base: ghcr.io/home-assistant/i386-base-python:3.12-alpine3.20
-            platform: linux/386
 
     steps:
       - uses: actions/checkout@v4
@@ -173,11 +164,8 @@ jobs:
 
           | Architecture | Image |
           |---|---|
-          | amd64    | \`ghcr.io/${REPO}/amd64-health_recorder:${VERSION}\`    |
-          | aarch64  | \`ghcr.io/${REPO}/aarch64-health_recorder:${VERSION}\`  |
-          | armv7    | \`ghcr.io/${REPO}/armv7-health_recorder:${VERSION}\`    |
-          | armhf    | \`ghcr.io/${REPO}/armhf-health_recorder:${VERSION}\`    |
-          | i386     | \`ghcr.io/${REPO}/i386-health_recorder:${VERSION}\`     |
+          | amd64   | \`ghcr.io/${REPO}/amd64-health_recorder:${VERSION}\`   |
+          | aarch64 | \`ghcr.io/${REPO}/aarch64-health_recorder:${VERSION}\` |
 
           ## 🖥️ Standalone (Docker Compose)
 
