@@ -1,0 +1,160 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"   # e.g. v1.0.0, v2.3.1
+
+permissions:
+  contents: write    # create GitHub release
+  packages: write    # push to ghcr.io
+
+jobs:
+  # ── Guard: version in config.yaml must match the tag ─────────────────────────
+  check-version:
+    name: Check version consistency
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract & validate version
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"                   # strip leading "v"
+          CFG=$(python3 -c "import yaml; print(yaml.safe_load(open('ha-addon/config.yaml'))['version'])")
+          echo "Tag version:    $TAG"
+          echo "config.yaml:    $CFG"
+          if [ "$TAG" != "$CFG" ]; then
+            echo "::error::Tag version ($TAG) does not match config.yaml version ($CFG)."
+            echo "::error::Update ha-addon/config.yaml before tagging."
+            exit 1
+          fi
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+
+  # ── Build & push one image per architecture ───────────────────────────────────
+  build-and-push:
+    name: Build ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    needs: check-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            base: ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.20
+            platform: linux/amd64
+          - arch: aarch64
+            base: ghcr.io/home-assistant/aarch64-base-python:3.12-alpine3.20
+            platform: linux/arm64
+          - arch: armv7
+            base: ghcr.io/home-assistant/armv7-base-python:3.12-alpine3.20
+            platform: linux/arm/v7
+          - arch: armhf
+            base: ghcr.io/home-assistant/armhf-base-python:3.12-alpine3.20
+            platform: linux/arm/v6
+          - arch: i386
+            base: ghcr.io/home-assistant/i386-base-python:3.12-alpine3.20
+            platform: linux/386
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU (for cross-platform builds)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ha-addon
+          push: true
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            BUILD_FROM=${{ matrix.base }}
+          tags: |
+            ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:${{ needs.check-version.outputs.version }}
+            ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:latest
+          labels: |
+            org.opencontainers.image.title=Health Recorder (${{ matrix.arch }})
+            org.opencontainers.image.description=Personal health data recorder — HA addon
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.check-version.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache
+          cache-to:   type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache,mode=max
+
+  # ── Create GitHub release ─────────────────────────────────────────────────────
+  github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [check-version, build-and-push]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed for --generate-notes
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.check-version.outputs.version }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "Health Recorder v${VERSION}" \
+            --generate-notes \
+            --notes-start-tag "$(git tag --sort=-version:refname | sed -n '2p')" \
+            --verify-tag || \
+          gh release create "${{ github.ref_name }}" \
+            --title "Health Recorder v${VERSION}" \
+            --generate-notes \
+            --verify-tag
+
+      - name: Append install instructions to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.check-version.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          BODY=$(gh release view "${{ github.ref_name }}" --json body -q .body)
+          gh release edit "${{ github.ref_name }}" --notes "${BODY}
+
+          ---
+
+          ## 🏠 Installation (Home Assistant)
+
+          1. Go to **Settings → Add-ons → Store → ⋮ → Repositories**
+          2. Add: \`https://github.com/${REPO}\`
+          3. Install **Health Recorder** and start it
+          4. The **Health** panel appears in your HA sidebar
+
+          ## 🐳 Pre-built Docker images (ghcr.io)
+
+          | Architecture | Image |
+          |---|---|
+          | amd64    | \`ghcr.io/${REPO}/amd64-health_recorder:${VERSION}\`    |
+          | aarch64  | \`ghcr.io/${REPO}/aarch64-health_recorder:${VERSION}\`  |
+          | armv7    | \`ghcr.io/${REPO}/armv7-health_recorder:${VERSION}\`    |
+          | armhf    | \`ghcr.io/${REPO}/armhf-health_recorder:${VERSION}\`    |
+          | i386     | \`ghcr.io/${REPO}/i386-health_recorder:${VERSION}\`     |
+
+          ## 🖥️ Standalone (Docker Compose)
+
+          \`\`\`bash
+          git clone https://github.com/${REPO}
+          cd health-recorder
+          cp backend/.env.example backend/.env   # add Google credentials
+          docker compose up --build
+          # Frontend: http://localhost:5173
+          # Backend API: http://localhost:8000/docs
+          \`\`\`"

@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+      - "feature/**"
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Lint ────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint YAML files
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: ha-addon/config.yaml ha-addon/build.yaml
+          config_data: |
+            extends: default
+            rules:
+              line-length: {max: 120}
+              truthy: disable
+
+      - name: Lint Dockerfile (hadolint)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ha-addon/Dockerfile
+          ignore: DL3018,DL3013   # apk/pip --no-cache warnings suppressed
+
+      - name: Validate addon config.yaml
+        run: |
+          python3 - <<'EOF'
+          import yaml, sys
+          with open("ha-addon/config.yaml") as f:
+              cfg = yaml.safe_load(f)
+          required = ["name", "description", "version", "slug", "arch", "init"]
+          missing = [k for k in required if k not in cfg]
+          if missing:
+              print(f"ERROR: Missing required keys in config.yaml: {missing}")
+              sys.exit(1)
+          print(f"config.yaml OK — version {cfg['version']}, slug {cfg['slug']}")
+          EOF
+
+  # ── Python syntax ────────────────────────────────────────────────────────────
+  python-syntax:
+    name: Python syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check ha-addon Python files
+        run: |
+          python3 - <<'EOF'
+          import ast, pathlib, sys
+          errors = []
+          for f in pathlib.Path("ha-addon/app").rglob("*.py"):
+              try:
+                  ast.parse(f.read_text())
+              except SyntaxError as e:
+                  errors.append(f"{f}: {e}")
+          if errors:
+              print("Syntax errors found:")
+              for e in errors:
+                  print(f"  {e}")
+              sys.exit(1)
+          print(f"All {len(list(pathlib.Path('ha-addon/app').rglob('*.py')))} Python files OK")
+          EOF
+
+      - name: Check backend Python files
+        run: |
+          python3 - <<'EOF'
+          import ast, pathlib, sys
+          errors = []
+          for f in pathlib.Path("backend/app").rglob("*.py"):
+              try:
+                  ast.parse(f.read_text())
+              except SyntaxError as e:
+                  errors.append(f"{f}: {e}")
+          if errors:
+              print("Syntax errors found:")
+              for e in errors:
+                  print(f"  {e}")
+              sys.exit(1)
+          print(f"All {len(list(pathlib.Path('backend/app').rglob('*.py')))} Python files OK")
+          EOF
+
+  # ── Docker build test (amd64 only, no push) ──────────────────────────────────
+  build-test:
+    name: Docker build test (amd64)
+    runs-on: ubuntu-latest
+    needs: [lint, python-syntax]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build addon image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ha-addon
+          push: false
+          platforms: linux/amd64
+          build-args: |
+            BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.20
+          tags: health-recorder-ha:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
