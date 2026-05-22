@@ -93,7 +93,7 @@ jobs:
             org.opencontainers.image.version=${{ needs.check-version.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache
-          cache-to:   type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache,mode=max
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache,mode=max
 
   # ── Create GitHub release ─────────────────────────────────────────────────────
   github-release:

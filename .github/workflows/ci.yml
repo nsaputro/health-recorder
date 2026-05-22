@@ -26,11 +26,7 @@ jobs:
         uses: ibiqlik/action-yamllint@v3
         with:
           file_or_dir: ha-addon/config.yaml ha-addon/build.yaml
-          config_data: |
-            extends: default
-            rules:
-              line-length: {max: 120}
-              truthy: disable
+          config_file: .yamllint.yml
 
       - name: Lint Dockerfile (hadolint)
         uses: hadolint/hadolint-action@v3.1.0
