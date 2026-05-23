@@ -1,9 +1,9 @@
-name: "Health Recorder"
+name: "Health Recorder (dev)"
 description: >-
-  Track body weight, lab results (cholesterol, glucose, uric acid),
+  [DEV CHANNEL] Track body weight, lab results (cholesterol, glucose, uric acid),
   blood pressure, and heart rate with optional Google Fit & Sheets sync.
 version: "0.2.0"
-slug: "health_recorder"
+slug: "health_recorder_dev"
 homeassistant: "2024.1.0"
 url: "https://github.com/nsaputro/health-recorder"
 # Pre-built images — HA substitutes {arch} (amd64, aarch64)
@@ -17,13 +17,13 @@ init: false
 ingress: true
 ingress_port: 8099
 panel_icon: "mdi:heart-pulse"
-panel_title: "Health"
+panel_title: "Health (dev)"
 
-# Direct port — needed for Google OAuth redirect URI
+# Direct port — different from stable (8099) to allow both to run simultaneously
 ports:
-  8099/tcp: 8099
+  8099/tcp: 8100
 ports_description:
-  8099/tcp: "Web UI & Google OAuth callback (http://<ha-ip>:8099)"
+  8099/tcp: "Dev Web UI & Google OAuth callback (http://<ha-ip>:8100)"
 
 # User-configurable options
 options:
