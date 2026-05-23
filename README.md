@@ -1,5 +1,7 @@
 # 🫀 Health Recorder
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A personal health data recorder with Google Fit and Google Sheets sync.
 
 Available as a **Home Assistant addon** (sidebar panel, multi-user) or as a **standalone app** (Docker Compose).
@@ -160,5 +162,12 @@ health-recorder/
 ├── frontend/                    # Standalone React frontend
 │   └── src/
 ├── docker-compose.yml
+├── LICENSE
 └── README.md
 ```
+
+---
+
+## License
+
+[MIT](LICENSE) © Nugroho Saputro
