@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -5,10 +7,18 @@ from .config import settings
 from .database import init_db
 from .routers import health, auth, sync
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
 app = FastAPI(
     title="Health Recorder API",
     description="Personal health data recorder with Google Fit and Google Sheets sync",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS — allow the React dev server and any configured frontend URL
@@ -24,11 +34,6 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(sync.router)
-
-
-@app.on_event("startup")
-def on_startup():
-    init_db()
 
 
 @app.get("/", tags=["meta"])
