@@ -5,9 +5,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Git Policy
 
 **Never push directly to `main`.** All changes must go through a pull request:
-1. Create a feature branch: `git checkout -b feature/your-description`
+1. **Always** create the branch from the latest `main`: `git checkout origin/main -b feature/your-description`
 2. Commit changes and push the branch
 3. Open a PR targeting `main` via the GitHub MCP tools (`mcp__github__create_pull_request`)
+
+## Versioning
+
+**Before setting a version in any PR, always check the latest GitHub release first:**
+
+```
+mcp__github__get_latest_release  owner=nsaputro  repo=health-recorder
+```
+
+The next version must be higher than the latest release. Never reuse an already-released version number. Use semantic versioning (`MAJOR.MINOR.PATCH`):
+- `PATCH` bump (e.g. `0.1.2` → `0.1.3`) for bug fixes and small improvements
+- `MINOR` bump (e.g. `0.1.x` → `0.2.0`) for new features
+- `MAJOR` bump for breaking changes
+
+Update `ha-addon/config.yaml` `version` field in the same PR as the change.
+
+## Changelog
+
+**Every PR that changes addon behaviour must update `CHANGELOG.md`.**
+
+- Add an entry under `## [Unreleased]` in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
+- Use the categories `Added`, `Changed`, `Fixed`, `Removed` as appropriate
+- When a release is cut, move `[Unreleased]` entries to a new `## [x.y.z] - YYYY-MM-DD` heading and update the comparison links at the bottom
 
 ## Development Commands
 
@@ -98,6 +121,8 @@ All supported test types, their display names, default units, and clinical refer
 3. Creates a GitHub release with install instructions
 
 **To release a new version:**
-1. Bump `version` in `ha-addon/config.yaml`
-2. Merge via PR to `main`
-3. Go to Actions → Release → Run workflow → enter the new version number
+1. Check latest release: `mcp__github__get_latest_release`
+2. Bump `version` in `ha-addon/config.yaml` to next version
+3. Move `## [Unreleased]` entries in `CHANGELOG.md` to `## [x.y.z] - YYYY-MM-DD` and update comparison links
+4. Merge via PR to `main`
+5. Go to Actions → Release → Run workflow → enter the new version number
