@@ -6,6 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+# Prevent the browser from caching index.html so a new addon version is
+# always picked up immediately after an update.
+_NO_CACHE = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
 from .config import settings
 from .database import init_db
 from .routers import auth, health, sync
@@ -59,7 +67,7 @@ async def serve_root() -> FileResponse:
     index = STATIC_DIR / "index.html"
     if not index.exists():
         raise HTTPException(status_code=404, detail="UI not found")
-    return FileResponse(str(index))
+    return FileResponse(str(index), headers=_NO_CACHE)
 
 
 # Catch-all — serve index.html for any unmatched path so bookmarks work.
@@ -69,4 +77,4 @@ async def serve_spa(full_path: str) -> FileResponse:
     index = STATIC_DIR / "index.html"
     if not index.exists():
         raise HTTPException(status_code=404, detail="UI not found")
-    return FileResponse(str(index))
+    return FileResponse(str(index), headers=_NO_CACHE)
