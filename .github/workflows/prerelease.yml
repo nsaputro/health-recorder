@@ -4,40 +4,59 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Pre-release version (e.g. 0.3.0b1, 0.3.0rc1, 0.3.0-rc.1)"
+        description: "Pre-release version (must match ha-addon-dev/config.yaml, e.g. 0.3.0b2)"
         required: true
 
 permissions:
-  contents: write    # push tag + commit to main + create release
+  contents: write    # push tag + create GitHub release
   packages: write    # push to ghcr.io
 
 jobs:
-  # ── Guard: must be a pre-release version string ───────────────────────────────
-  validate:
-    name: Validate version
+  # ── Guard: version input must match ha-addon-dev/config.yaml and be pre-release
+  check-version:
+    name: Check version consistency
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.ver.outputs.version }}
       tag: ${{ steps.ver.outputs.tag }}
     steps:
-      - name: Check version has a pre-release suffix
+      - uses: actions/checkout@v4
+
+      - name: Validate version
         id: ver
         run: |
           VERSION="${{ inputs.version }}"
-          # Reject pure X.Y.Z — those must go through the Release workflow
-          if echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::Stable versions (X.Y.Z) must use the Release workflow."
-            echo "::error::Add a pre-release suffix: b1, rc1, -rc.1, -beta.1, etc."
+          CFG=$(python3 -c "import yaml; print(yaml.safe_load(open('ha-addon-dev/config.yaml'))['version'])")
+          echo "Input version:       $VERSION"
+          echo "ha-addon-dev/config: $CFG"
+
+          if [ "$VERSION" != "$CFG" ]; then
+            echo "::error::Input version ($VERSION) does not match ha-addon-dev/config.yaml ($CFG)."
+            echo "::error::Bump the version in ha-addon-dev/config.yaml via a PR first."
             exit 1
           fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION"    >> "$GITHUB_OUTPUT"
+
+          # Reject pure X.Y.Z — pre-release suffix required
+          if echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Stable versions (X.Y.Z) must use the Release workflow."
+            echo "::error::Add a pre-release suffix: b1, rc1, -rc.1, etc."
+            exit 1
+          fi
+
+          # Tag the current main commit
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f "v${VERSION}"
+          git push -f origin "v${VERSION}"
+
+          echo "version=$VERSION"  >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION"     >> "$GITHUB_OUTPUT"
 
   # ── Build & push one image per architecture (version tag only, no :latest) ────
   build-and-push:
     name: Build ${{ matrix.arch }}
     runs-on: ubuntu-latest
-    needs: validate
+    needs: check-version
     strategy:
       fail-fast: false
       matrix:
@@ -49,7 +68,9 @@ jobs:
             base: ghcr.io/home-assistant/aarch64-base-python:3.12-alpine3.20
             platform: linux/arm64
     steps:
-      - uses: actions/checkout@v4   # builds from main's code
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-version.outputs.tag }}
 
       - name: Set up QEMU (for cross-platform builds)
         uses: docker/setup-qemu-action@v3
@@ -73,79 +94,34 @@ jobs:
           build-args: |
             BUILD_FROM=${{ matrix.base }}
           tags: |
-            ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:${{ needs.validate.outputs.version }}
+            ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:${{ needs.check-version.outputs.version }}
           labels: |
             org.opencontainers.image.title=Health Recorder (${{ matrix.arch }}) pre-release
             org.opencontainers.image.description=Developer pre-release — not for production
             org.opencontainers.image.url=https://github.com/${{ github.repository }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.version=${{ needs.validate.outputs.version }}
+            org.opencontainers.image.version=${{ needs.check-version.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache,mode=max
 
-  # ── Bump version in ha-addon-dev/config.yaml so HA pulls the new image ────────
-  update-dev-config:
-    name: Bump ha-addon-dev version
-    runs-on: ubuntu-latest
-    needs: [validate, build-and-push]
-    outputs:
-      sha: ${{ steps.push.outputs.sha }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Update version in ha-addon-dev/config.yaml
-        run: |
-          python3 -c "
-          import re
-          path = 'ha-addon-dev/config.yaml'
-          text = open(path).read()
-          text = re.sub(r'^version:.*', 'version: \"${{ needs.validate.outputs.version }}\"', text, flags=re.MULTILINE)
-          open(path, 'w').write(text)
-          "
-
-      - name: Commit and push to main
-        id: push
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ha-addon-dev/config.yaml
-          if git diff --cached --quiet; then
-            echo "Version unchanged — skipping commit"
-            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          else
-            git commit -m "chore: bump dev channel version to ${{ needs.validate.outputs.version }}"
-            git push origin main
-            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          fi
-
-  # ── Tag and create GitHub pre-release ─────────────────────────────────────────
+  # ── Create GitHub pre-release ─────────────────────────────────────────────────
   github-prerelease:
     name: Create GitHub Pre-Release
     runs-on: ubuntu-latest
-    needs: [validate, update-dev-config]
+    needs: [check-version, build-and-push]
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
-          fetch-depth: 0
+          ref: ${{ needs.check-version.outputs.tag }}
 
-      - name: Tag and publish pre-release
+      - name: Publish pre-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.validate.outputs.version }}
-          TAG: ${{ needs.validate.outputs.tag }}
+          VERSION: ${{ needs.check-version.outputs.version }}
+          TAG: ${{ needs.check-version.outputs.tag }}
           REPO: ${{ github.repository }}
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin main
-          git tag -f "${TAG}" origin/main
-          git push -f origin "${TAG}"
-
           cat > /tmp/notes.md << EOF
           ## Pre-release ${TAG}
 
@@ -156,7 +132,7 @@ jobs:
 
           1. Go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories**
           2. Add: \`https://github.com/${REPO}\`
-             *(if you already added it for the stable addon, skip this step)*
+             *(if already added for the stable addon, skip this step)*
           3. Find **Health Recorder (dev)** → **Install** → **Start**
           4. The **Health (dev)** panel appears in your sidebar
 
