@@ -1,10 +1,10 @@
 """CRUD endpoints for health data."""
-from datetime import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..dependencies import HAUser, get_ha_user
 from ..models.health import BodyMetric, LabResult, VitalSign
 from ..schemas.health import (
     BodyMetricCreate, BodyMetricRead,
@@ -32,10 +32,12 @@ def _compute_bmi(weight_kg: float, height_cm: Optional[float]) -> Optional[float
 def list_body_metrics(
     limit: int = Query(default=100, le=500),
     offset: int = 0,
+    user: HAUser = Depends(get_ha_user),
     db: Session = Depends(get_db),
 ):
     return (
         db.query(BodyMetric)
+        .filter(BodyMetric.ha_user_id == user.id)
         .order_by(BodyMetric.measured_at.desc())
         .offset(offset)
         .limit(limit)
@@ -44,9 +46,14 @@ def list_body_metrics(
 
 
 @router.post("/body-metrics", response_model=BodyMetricRead, status_code=201)
-def create_body_metric(payload: BodyMetricCreate, db: Session = Depends(get_db)):
+def create_body_metric(
+    payload: BodyMetricCreate,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
     bmi = _compute_bmi(payload.weight_kg, payload.height_cm)
     record = BodyMetric(
+        ha_user_id=user.id,
         measured_at=payload.measured_at,
         weight_kg=payload.weight_kg,
         height_cm=payload.height_cm,
@@ -60,16 +67,33 @@ def create_body_metric(payload: BodyMetricCreate, db: Session = Depends(get_db))
 
 
 @router.get("/body-metrics/{record_id}", response_model=BodyMetricRead)
-def get_body_metric(record_id: int, db: Session = Depends(get_db)):
-    record = db.query(BodyMetric).get(record_id)
+def get_body_metric(
+    record_id: int,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(BodyMetric)
+        .filter(BodyMetric.id == record_id, BodyMetric.ha_user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
 
 
 @router.put("/body-metrics/{record_id}", response_model=BodyMetricRead)
-def update_body_metric(record_id: int, payload: BodyMetricCreate, db: Session = Depends(get_db)):
-    record = db.query(BodyMetric).get(record_id)
+def update_body_metric(
+    record_id: int,
+    payload: BodyMetricCreate,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(BodyMetric)
+        .filter(BodyMetric.id == record_id, BodyMetric.ha_user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     record.measured_at = payload.measured_at
@@ -85,8 +109,16 @@ def update_body_metric(record_id: int, payload: BodyMetricCreate, db: Session = 
 
 
 @router.delete("/body-metrics/{record_id}", status_code=204)
-def delete_body_metric(record_id: int, db: Session = Depends(get_db)):
-    record = db.query(BodyMetric).get(record_id)
+def delete_body_metric(
+    record_id: int,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(BodyMetric)
+        .filter(BodyMetric.id == record_id, BodyMetric.ha_user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     db.delete(record)
@@ -100,17 +132,23 @@ def list_lab_results(
     test_type: Optional[str] = None,
     limit: int = Query(default=200, le=500),
     offset: int = 0,
+    user: HAUser = Depends(get_ha_user),
     db: Session = Depends(get_db),
 ):
-    q = db.query(LabResult)
+    q = db.query(LabResult).filter(LabResult.ha_user_id == user.id)
     if test_type:
         q = q.filter(LabResult.test_type == test_type)
     return q.order_by(LabResult.measured_at.desc()).offset(offset).limit(limit).all()
 
 
 @router.post("/lab-results", response_model=LabResultRead, status_code=201)
-def create_lab_result(payload: LabResultCreate, db: Session = Depends(get_db)):
+def create_lab_result(
+    payload: LabResultCreate,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
     record = LabResult(
+        ha_user_id=user.id,
         measured_at=payload.measured_at,
         test_type=payload.test_type,
         value=payload.value,
@@ -125,16 +163,33 @@ def create_lab_result(payload: LabResultCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/lab-results/{record_id}", response_model=LabResultRead)
-def get_lab_result(record_id: int, db: Session = Depends(get_db)):
-    record = db.query(LabResult).get(record_id)
+def get_lab_result(
+    record_id: int,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(LabResult)
+        .filter(LabResult.id == record_id, LabResult.ha_user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
 
 
 @router.put("/lab-results/{record_id}", response_model=LabResultRead)
-def update_lab_result(record_id: int, payload: LabResultCreate, db: Session = Depends(get_db)):
-    record = db.query(LabResult).get(record_id)
+def update_lab_result(
+    record_id: int,
+    payload: LabResultCreate,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(LabResult)
+        .filter(LabResult.id == record_id, LabResult.ha_user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     for field in ("measured_at", "test_type", "value", "unit", "lab_name", "notes"):
@@ -147,8 +202,16 @@ def update_lab_result(record_id: int, payload: LabResultCreate, db: Session = De
 
 
 @router.delete("/lab-results/{record_id}", status_code=204)
-def delete_lab_result(record_id: int, db: Session = Depends(get_db)):
-    record = db.query(LabResult).get(record_id)
+def delete_lab_result(
+    record_id: int,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(LabResult)
+        .filter(LabResult.id == record_id, LabResult.ha_user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     db.delete(record)
@@ -161,10 +224,12 @@ def delete_lab_result(record_id: int, db: Session = Depends(get_db)):
 def list_vital_signs(
     limit: int = Query(default=100, le=500),
     offset: int = 0,
+    user: HAUser = Depends(get_ha_user),
     db: Session = Depends(get_db),
 ):
     return (
         db.query(VitalSign)
+        .filter(VitalSign.ha_user_id == user.id)
         .order_by(VitalSign.measured_at.desc())
         .offset(offset)
         .limit(limit)
@@ -173,8 +238,13 @@ def list_vital_signs(
 
 
 @router.post("/vital-signs", response_model=VitalSignRead, status_code=201)
-def create_vital_sign(payload: VitalSignCreate, db: Session = Depends(get_db)):
+def create_vital_sign(
+    payload: VitalSignCreate,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
     record = VitalSign(
+        ha_user_id=user.id,
         measured_at=payload.measured_at,
         systolic_bp=payload.systolic_bp,
         diastolic_bp=payload.diastolic_bp,
@@ -188,16 +258,33 @@ def create_vital_sign(payload: VitalSignCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/vital-signs/{record_id}", response_model=VitalSignRead)
-def get_vital_sign(record_id: int, db: Session = Depends(get_db)):
-    record = db.query(VitalSign).get(record_id)
+def get_vital_sign(
+    record_id: int,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(VitalSign)
+        .filter(VitalSign.id == record_id, VitalSign.ha_user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
 
 
 @router.put("/vital-signs/{record_id}", response_model=VitalSignRead)
-def update_vital_sign(record_id: int, payload: VitalSignCreate, db: Session = Depends(get_db)):
-    record = db.query(VitalSign).get(record_id)
+def update_vital_sign(
+    record_id: int,
+    payload: VitalSignCreate,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(VitalSign)
+        .filter(VitalSign.id == record_id, VitalSign.ha_user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     for field in ("measured_at", "systolic_bp", "diastolic_bp", "heart_rate", "notes"):
@@ -210,8 +297,16 @@ def update_vital_sign(record_id: int, payload: VitalSignCreate, db: Session = De
 
 
 @router.delete("/vital-signs/{record_id}", status_code=204)
-def delete_vital_sign(record_id: int, db: Session = Depends(get_db)):
-    record = db.query(VitalSign).get(record_id)
+def delete_vital_sign(
+    record_id: int,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    record = (
+        db.query(VitalSign)
+        .filter(VitalSign.id == record_id, VitalSign.ha_user_id == user.id)
+        .first()
+    )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
     db.delete(record)

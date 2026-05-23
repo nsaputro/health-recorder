@@ -1,5 +1,5 @@
 """Google OAuth2 helper — builds the authorization URL and exchanges codes."""
-import json
+import secrets
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -24,22 +24,32 @@ def _client_config() -> dict:
     }
 
 
-def get_authorization_url() -> tuple[str, str]:
-    """Return (authorization_url, state) for the OAuth2 redirect."""
+def get_authorization_url(ha_user_id: str = "") -> tuple[str, str]:
+    """Return (authorization_url, state) for the OAuth2 redirect.
+
+    The OAuth ``state`` parameter is a composite string:
+    ``<ha_user_id>|<random_token>``.  The ``|`` separator is safe because HA
+    user IDs are UUIDs (hex + hyphens only).  The composite state is returned
+    verbatim by Google on the callback, allowing ``google_callback`` to recover
+    ``ha_user_id`` even though the callback lands on port 8099 where HA ingress
+    headers are not present.
+    """
     flow = Flow.from_client_config(
         _client_config(),
         scopes=settings.GOOGLE_SCOPES,
         redirect_uri=settings.GOOGLE_REDIRECT_URI,
     )
-    url, state = flow.authorization_url(
+    composite_state = f"{ha_user_id}|{secrets.token_urlsafe(16)}"
+    url, _ = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
         prompt="consent",
+        state=composite_state,
     )
-    return url, state
+    return url, composite_state
 
 
-def exchange_code(code: str, db: Session) -> GoogleCredential:
+def exchange_code(code: str, db: Session, ha_user_id: str = "") -> GoogleCredential:
     """Exchange an authorization code for tokens; persist to DB."""
     flow = Flow.from_client_config(
         _client_config(),
@@ -57,7 +67,9 @@ def exchange_code(code: str, db: Session) -> GoogleCredential:
     if expiry and expiry.tzinfo is None:
         expiry = expiry.replace(tzinfo=timezone.utc)
 
-    existing = db.query(GoogleCredential).filter_by(user_email=user_info["email"]).first()
+    existing = db.query(GoogleCredential).filter_by(
+        ha_user_id=ha_user_id, user_email=user_info["email"]
+    ).first()
     if existing:
         existing.access_token = creds.token
         existing.refresh_token = creds.refresh_token or existing.refresh_token
@@ -68,6 +80,7 @@ def exchange_code(code: str, db: Session) -> GoogleCredential:
         return existing
 
     credential = GoogleCredential(
+        ha_user_id=ha_user_id,
         user_email=user_info["email"],
         user_name=user_info.get("name"),
         access_token=creds.token,
@@ -80,9 +93,9 @@ def exchange_code(code: str, db: Session) -> GoogleCredential:
     return credential
 
 
-def get_credentials(db: Session) -> Optional[Credentials]:
+def get_credentials(db: Session, ha_user_id: str = "") -> Optional[Credentials]:
     """Load the stored credential and return a refreshable Credentials object."""
-    row = db.query(GoogleCredential).first()
+    row = db.query(GoogleCredential).filter_by(ha_user_id=ha_user_id).first()
     if not row:
         return None
 
@@ -102,10 +115,10 @@ def get_credentials(db: Session) -> Optional[Credentials]:
     return creds
 
 
-def get_stored_credential(db: Session) -> Optional[GoogleCredential]:
-    return db.query(GoogleCredential).first()
+def get_stored_credential(db: Session, ha_user_id: str = "") -> Optional[GoogleCredential]:
+    return db.query(GoogleCredential).filter_by(ha_user_id=ha_user_id).first()
 
 
-def revoke_credentials(db: Session) -> None:
-    db.query(GoogleCredential).delete()
+def revoke_credentials(db: Session, ha_user_id: str = "") -> None:
+    db.query(GoogleCredential).filter_by(ha_user_id=ha_user_id).delete()
     db.commit()
