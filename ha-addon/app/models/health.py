@@ -26,6 +26,7 @@ class BodyMetric(Base):
     __tablename__ = "body_metrics"
 
     id = Column(Integer, primary_key=True, index=True)
+    ha_user_id = Column(String(128), nullable=False, index=True, server_default="")
     measured_at = Column(DateTime(timezone=True), nullable=False)
     weight_kg = Column(Float, nullable=False)
     height_cm = Column(Float, nullable=True)  # optional, used to compute BMI
@@ -41,6 +42,7 @@ class LabResult(Base):
     __tablename__ = "lab_results"
 
     id = Column(Integer, primary_key=True, index=True)
+    ha_user_id = Column(String(128), nullable=False, index=True, server_default="")
     measured_at = Column(DateTime(timezone=True), nullable=False)
     test_type = Column(String(64), nullable=False)  # LabTestType enum value
     value = Column(Float, nullable=False)
@@ -57,6 +59,7 @@ class VitalSign(Base):
     __tablename__ = "vital_signs"
 
     id = Column(Integer, primary_key=True, index=True)
+    ha_user_id = Column(String(128), nullable=False, index=True, server_default="")
     measured_at = Column(DateTime(timezone=True), nullable=False)
     systolic_bp = Column(Integer, nullable=True)   # mmHg
     diastolic_bp = Column(Integer, nullable=True)  # mmHg
@@ -69,11 +72,12 @@ class VitalSign(Base):
 
 
 class GoogleCredential(Base):
-    """Stores OAuth2 tokens for the single user (personal app)."""
+    """Stores OAuth2 tokens per HA user."""
     __tablename__ = "google_credentials"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_email = Column(String(256), unique=True, nullable=False)
+    ha_user_id = Column(String(128), nullable=False, index=True, server_default="")
+    user_email = Column(String(256), nullable=False)
     user_name = Column(String(256), nullable=True)
     access_token = Column(Text, nullable=False)
     refresh_token = Column(Text, nullable=True)

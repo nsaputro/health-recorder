@@ -62,11 +62,13 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Roboto,'Noto Sans',sans-serif;background:var(--bg);color:var(--text-primary);font-size:14px;line-height:1.5}
 
-/* ── Google status bar (replaces full header — HA already shows title) */
+/* ── Status bar (Google sync left, HA username right) ───────────────── */
 .status-bar{background:var(--surface);border-bottom:1px solid var(--divider);padding:6px 16px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary)}
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .dot.on{background:var(--success)}.dot.off{background:var(--divider)}
 #gLabel{font-weight:500}
+.status-bar-sep{flex:1}
+.status-bar-user{font-size:12px;color:var(--text-secondary);font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px}
 
 /* ── Tabs ───────────────────────────────────────────────────────────── */
 .tabs{background:var(--surface);border-bottom:1px solid var(--divider);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -159,11 +161,16 @@ tr:hover td{background:var(--hover-bg)}
 </head>
 <body>
 
-<!-- Google status bar -->
+<!-- Status bar: Google sync (left) + HA user (right) -->
 <div class="status-bar">
   <span class="dot off" id="gDot"></span>
   <span>Google Sync:</span>
   <span id="gLabel">Not connected</span>
+  <span class="status-bar-sep"></span>
+  <span class="status-bar-user">
+    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+    <span id="haUserLabel"></span>
+  </span>
 </div>
 
 <!-- Tab bar -->
@@ -435,6 +442,7 @@ function toggle(formId, arrowId) {
 ══════════════════════════════════════════════════════════════════ */
 async function loadAll() {
   await Promise.allSettled([
+    loadHAUser(),
     load('weights', 'health/body-metrics?limit=60'),
     load('vitals',  'health/vital-signs?limit=60'),
     load('labs',    'health/lab-results?limit=200'),
@@ -442,6 +450,14 @@ async function loadAll() {
     loadGoogle(),
   ]);
   renderOverview();
+}
+
+async function loadHAUser() {
+  try { S.haUser = await req('GET', 'auth/me'); } catch { S.haUser = null; }
+  const el = document.getElementById('haUserLabel');
+  if (!el) return;
+  const u = S.haUser;
+  el.textContent = (u && (u.display_name || u.name)) ? (u.display_name || u.name) : '';
 }
 
 async function load(key, url) {

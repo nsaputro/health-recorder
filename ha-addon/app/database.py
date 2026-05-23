@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
@@ -22,6 +22,29 @@ def get_db():
 
 
 def init_db():
-    """Create all tables."""
+    """Create all tables then apply forward-only migrations."""
     from .models import health  # noqa: F401 — ensures models are registered
     Base.metadata.create_all(bind=engine)
+    _migrate(engine)
+
+
+def _migrate(engine):
+    """Apply incremental schema migrations without Alembic.
+
+    SQLite supports ALTER TABLE … ADD COLUMN but raises OperationalError if
+    the column already exists. We wrap each statement in try/except so the
+    function is fully idempotent — safe to call on every startup.
+    """
+    migrations = [
+        "ALTER TABLE body_metrics       ADD COLUMN ha_user_id TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE lab_results        ADD COLUMN ha_user_id TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE vital_signs        ADD COLUMN ha_user_id TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE google_credentials ADD COLUMN ha_user_id TEXT NOT NULL DEFAULT ''",
+    ]
+    with engine.connect() as conn:
+        for sql in migrations:
+            try:
+                conn.execute(text(sql))
+                conn.commit()
+            except Exception:
+                conn.rollback()  # column already exists — safe to skip

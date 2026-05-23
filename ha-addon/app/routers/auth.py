@@ -1,12 +1,13 @@
-"""Google OAuth2 endpoints — HA addon variant.
-After a successful callback the user is redirected back to '/' (the addon UI root)
-rather than a configurable FRONTEND_URL.
+"""Google OAuth2 endpoints — HA addon variant (multi-user).
+
+After a successful callback the user is redirected back to '/' (the addon UI root).
 """
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..dependencies import HAUser, get_ha_user
 from ..schemas.health import GoogleCredentialRead
 from ..services.google_auth import (
     exchange_code,
@@ -18,19 +19,38 @@ from ..services.google_auth import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+@router.get("/me")
+def auth_me(user: HAUser = Depends(get_ha_user)):
+    """Return the HA user identity extracted from ingress headers."""
+    return {
+        "id": user.id,
+        "name": user.name,
+        "display_name": user.display_name,
+    }
+
+
 @router.get("/google/login")
-def google_login():
-    """Redirect the browser to Google's OAuth2 consent screen."""
-    url, _state = get_authorization_url()
+def google_login(user: HAUser = Depends(get_ha_user)):
+    """Redirect the browser to Google's OAuth2 consent screen.
+
+    The current user's HA ID is embedded in the OAuth state so it survives
+    the round-trip redirect through Google back to port 8099 (where HA ingress
+    headers are absent).
+    """
+    url, _state = get_authorization_url(ha_user_id=user.id)
     return RedirectResponse(url)
 
 
 @router.get("/google/callback")
 def google_callback(code: str, state: str = "", db: Session = Depends(get_db)):
-    """Google redirects here after the user grants permission."""
+    """Google redirects here after the user grants permission.
+
+    State format: ``<ha_user_id>|<random>`` (see google_auth.get_authorization_url).
+    """
+    # Recover ha_user_id from the composite state (no HA headers on port 8099)
+    ha_user_id = state.split("|", 1)[0] if "|" in state else ""
     try:
-        exchange_code(code, db)
-        # Back to the addon UI root with a success flag
+        exchange_code(code, db, ha_user_id=ha_user_id)
         return RedirectResponse("/?google_connected=1")
     except Exception as exc:
         error_msg = str(exc)[:200]
@@ -38,14 +58,14 @@ def google_callback(code: str, state: str = "", db: Session = Depends(get_db)):
 
 
 @router.get("/google/status", response_model=GoogleCredentialRead)
-def google_status(db: Session = Depends(get_db)):
-    cred = get_stored_credential(db)
+def google_status(user: HAUser = Depends(get_ha_user), db: Session = Depends(get_db)):
+    cred = get_stored_credential(db, ha_user_id=user.id)
     if not cred:
         raise HTTPException(status_code=404, detail="Not connected to Google")
     return cred
 
 
 @router.delete("/google/disconnect")
-def google_disconnect(db: Session = Depends(get_db)):
-    revoke_credentials(db)
+def google_disconnect(user: HAUser = Depends(get_ha_user), db: Session = Depends(get_db)):
+    revoke_credentials(db, ha_user_id=user.id)
     return {"message": "Google account disconnected"}

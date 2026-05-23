@@ -8,6 +8,25 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+## [0.2.0] - unreleased
+
+### Added
+- Multi-user support: each Home Assistant user now has their own isolated health data.
+  Authentication is automatic — HA's ingress headers identify the logged-in user with no
+  extra login required.
+- Username display: the logged-in HA user's display name appears in the status bar.
+- New `GET /auth/me` endpoint returns the current user's HA identity.
+
+### Security
+- User headers are only trusted when `X-Ingress-Path` is also present (injected exclusively
+  by the HA supervisor). Requests to port 8099 without this header are treated as anonymous
+  (`ha_user_id = ""`), preventing impersonation via the direct port.
+
+### Changed
+- Google credentials are now stored per HA user; each user connects their own Google account.
+- OAuth state parameter carries the HA user ID so the callback (port 8099, no ingress
+  headers) can correctly attribute the credential to the right user.
+
 ## [0.1.5] - unreleased
 
 ### Fixed
@@ -67,7 +86,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/nsaputro/health-recorder/compare/v0.1.4...v0.2.0
 [0.1.5]: https://github.com/nsaputro/health-recorder/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/nsaputro/health-recorder/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/nsaputro/health-recorder/compare/v0.1.2...v0.1.3

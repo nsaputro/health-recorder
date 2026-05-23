@@ -99,8 +99,8 @@ def _log(db: Session, sync_type: str, record_type: str, record_id: int,
 
 # ── Public sync functions ───────────────────────────────────────────────────
 
-def sync_body_metric(record: BodyMetric, db: Session) -> bool:
-    creds = get_credentials(db)
+def sync_body_metric(record: BodyMetric, db: Session, ha_user_id: str = "") -> bool:
+    creds = get_credentials(db, ha_user_id=ha_user_id)
     if not creds:
         return False
     try:
@@ -131,8 +131,8 @@ def sync_body_metric(record: BodyMetric, db: Session) -> bool:
         return False
 
 
-def sync_vital_sign(record: VitalSign, db: Session) -> bool:
-    creds = get_credentials(db)
+def sync_vital_sign(record: VitalSign, db: Session, ha_user_id: str = "") -> bool:
+    creds = get_credentials(db, ha_user_id=ha_user_id)
     if not creds:
         return False
     synced_any = False
@@ -192,9 +192,9 @@ def sync_vital_sign(record: VitalSign, db: Session) -> bool:
         return False
 
 
-def sync_lab_result(record: LabResult, db: Session) -> bool:
+def sync_lab_result(record: LabResult, db: Session, ha_user_id: str = "") -> bool:
     """Only glucose maps to a Google Fit data type; others are Sheets-only."""
-    creds = get_credentials(db)
+    creds = get_credentials(db, ha_user_id=ha_user_id)
     if not creds:
         return False
     glucose_types = {"glucose_fasting", "glucose_random"}
@@ -235,24 +235,24 @@ def sync_lab_result(record: LabResult, db: Session) -> bool:
         return False
 
 
-def sync_all_unsynced(db: Session) -> dict:
-    """Batch sync all records not yet pushed to Google Fit."""
+def sync_all_unsynced(db: Session, ha_user_id: str = "") -> dict:
+    """Batch sync all records not yet pushed to Google Fit for the given user."""
     results = {"body_metrics": 0, "vital_signs": 0, "lab_results": 0, "errors": 0}
 
-    for record in db.query(BodyMetric).filter_by(synced_to_fit=False).all():
-        if sync_body_metric(record, db):
+    for record in db.query(BodyMetric).filter_by(synced_to_fit=False, ha_user_id=ha_user_id).all():
+        if sync_body_metric(record, db, ha_user_id=ha_user_id):
             results["body_metrics"] += 1
         else:
             results["errors"] += 1
 
-    for record in db.query(VitalSign).filter_by(synced_to_fit=False).all():
-        if sync_vital_sign(record, db):
+    for record in db.query(VitalSign).filter_by(synced_to_fit=False, ha_user_id=ha_user_id).all():
+        if sync_vital_sign(record, db, ha_user_id=ha_user_id):
             results["vital_signs"] += 1
         else:
             results["errors"] += 1
 
-    for record in db.query(LabResult).filter_by(synced_to_fit=False).all():
-        ok = sync_lab_result(record, db)
+    for record in db.query(LabResult).filter_by(synced_to_fit=False, ha_user_id=ha_user_id).all():
+        ok = sync_lab_result(record, db, ha_user_id=ha_user_id)
         if ok:
             results["lab_results"] += 1
         # Non-synchable types don't count as errors
