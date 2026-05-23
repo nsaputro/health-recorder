@@ -8,7 +8,15 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
-## [0.1.3] - unreleased
+## [0.1.4] - unreleased
+
+### Added
+- Dark mode support: UI automatically switches to a dark palette when the OS (or Home
+  Assistant) is in dark mode, using the CSS `prefers-color-scheme: dark` media query.
+  Colors mirror HA's own dark theme (`#111111` background, `#1c1c1c` card surface,
+  muted text and divider tones).
+
+## [0.1.3] - 2026-05-23
 
 ### Fixed
 - Browser no longer caches `index.html`; UI updates are visible immediately after an addon
@@ -53,7 +61,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/nsaputro/health-recorder/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/nsaputro/health-recorder/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/nsaputro/health-recorder/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/nsaputro/health-recorder/compare/v0.1.0...v0.1.1
