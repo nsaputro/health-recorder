@@ -8,7 +8,13 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
-## [0.1.4] - unreleased
+## [0.1.5] - unreleased
+
+### Fixed
+- Addon update screen now shows only the current version's release notes instead of the full
+  multi-version history.
+
+## [0.1.4] - 2026-05-23
 
 ### Added
 - Dark mode support: UI automatically switches to a dark palette when the OS (or Home
@@ -61,7 +67,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/nsaputro/health-recorder/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/nsaputro/health-recorder/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/nsaputro/health-recorder/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/nsaputro/health-recorder/compare/v0.1.1...v0.1.2
