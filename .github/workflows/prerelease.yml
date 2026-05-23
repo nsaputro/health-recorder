@@ -2,19 +2,15 @@ name: Pre-Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Pre-release version (must match ha-addon-dev/config.yaml, e.g. 0.3.0b2)"
-        required: true
 
 permissions:
   contents: write    # push tag + create GitHub release
   packages: write    # push to ghcr.io
 
 jobs:
-  # ── Guard: version input must match ha-addon-dev/config.yaml and be pre-release
+  # ── Read version from ha-addon-dev/config.yaml and validate ───────────────────
   check-version:
-    name: Check version consistency
+    name: Check version
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.ver.outputs.version }}
@@ -22,35 +18,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate version
+      - name: Read and validate version
         id: ver
         run: |
-          VERSION="${{ inputs.version }}"
-          CFG=$(python3 -c "import yaml; print(yaml.safe_load(open('ha-addon-dev/config.yaml'))['version'])")
-          echo "Input version:       $VERSION"
-          echo "ha-addon-dev/config: $CFG"
+          VERSION=$(python3 -c "import yaml; print(yaml.safe_load(open('ha-addon-dev/config.yaml'))['version'])")
+          echo "ha-addon-dev version: $VERSION"
 
-          if [ "$VERSION" != "$CFG" ]; then
-            echo "::error::Input version ($VERSION) does not match ha-addon-dev/config.yaml ($CFG)."
-            echo "::error::Bump the version in ha-addon-dev/config.yaml via a PR first."
-            exit 1
-          fi
-
-          # Reject pure X.Y.Z — pre-release suffix required
+          # Must have a pre-release suffix — pure X.Y.Z goes through Release workflow
           if echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::Stable versions (X.Y.Z) must use the Release workflow."
-            echo "::error::Add a pre-release suffix: b1, rc1, -rc.1, etc."
+            echo "::error::$VERSION is a stable version. Use the Release workflow, or add a pre-release suffix (b1, rc1, etc.) to ha-addon-dev/config.yaml."
             exit 1
           fi
 
-          # Tag the current main commit
+          # Fail if this tag already exists (already released)
+          if git ls-remote --tags origin "refs/tags/v${VERSION}" | grep -q .; then
+            echo "::error::v${VERSION} is already released. Bump the version in ha-addon-dev/config.yaml."
+            exit 1
+          fi
+
+          # Tag the current commit
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -f "v${VERSION}"
-          git push -f origin "v${VERSION}"
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
 
-          echo "version=$VERSION"  >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION"     >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION"    >> "$GITHUB_OUTPUT"
 
   # ── Build & push one image per architecture (version tag only, no :latest) ────
   build-and-push:
