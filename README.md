@@ -2,11 +2,54 @@
 
 A personal health data recorder with Google Fit and Google Sheets sync.
 
-**Tech stack:** FastAPI · SQLite · React · TypeScript · TailwindCSS · Recharts
+Available as a **Home Assistant addon** (sidebar panel, multi-user) or as a **standalone app** (Docker Compose).
 
 ---
 
-## Features
+## 🏠 Home Assistant Addon
+
+The HA addon is the primary way to run Health Recorder. It appears as a **Health** panel in your HA sidebar and requires no separate server.
+
+### Key features
+
+- **Multi-user** — each HA user gets their own isolated data; authentication is automatic via HA's ingress (no login form)
+- **Native look** — UI matches HA's color palette, Material card style, Roboto font, and dark mode
+- **Sidebar panel** — accessible from anywhere in HA via ingress
+- **Google sync** — optional Google Fit + Sheets sync, per user
+- **Persistent storage** — data lives at `/data/health_recorder.db`, survives addon updates
+
+### Installation
+
+1. In Home Assistant go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories**
+2. Add: `https://github.com/nsaputro/health-recorder`
+3. Find **Health Recorder** → **Install** → **Start**
+4. The **Health** panel appears in your sidebar
+
+### Google Sync (optional)
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create an OAuth 2.0 Client ID (Web application) with redirect URI:
+   ```
+   http://<your-ha-ip>:8099/auth/google/callback
+   ```
+2. In the addon **Configuration** tab set `google_client_id`, `google_client_secret`, `google_redirect_uri`
+3. Restart the addon, then open **Health → Settings → Connect Google Account**
+
+### What syncs where
+
+| Metric | Google Fit | Google Sheets |
+|--------|-----------|---------------|
+| Body weight / BMI | ✅ | ✅ |
+| Blood pressure | ✅ | ✅ |
+| Heart rate | ✅ | ✅ |
+| Blood glucose | ✅ | ✅ |
+| Cholesterol (LDL / HDL / Total) | — | ✅ |
+| Triglycerides | — | ✅ |
+| HbA1c | — | ✅ |
+| Uric acid | — | ✅ |
+
+---
+
+## 📊 Tracked Metrics
 
 | Metric | Record | Chart | Google Fit | Google Sheets |
 |--------|--------|-------|-----------|---------------|
@@ -19,18 +62,21 @@ A personal health data recorder with Google Fit and Google Sheets sync.
 | Blood Pressure | ✅ | ✅ | ✅ | ✅ |
 | Heart Rate | ✅ | ✅ | ✅ | ✅ |
 
-> **Note:** Google Fit only has native data types for weight, blood pressure, blood glucose, and heart rate.
-> All other lab values (cholesterol, uric acid, HbA1c, etc.) are synced to Google Sheets.
-
 ---
 
-## Quick Start (Local Dev)
+## 🖥️ Standalone App (Local / Docker)
 
-### Prerequisites
+A React + FastAPI version for running outside Home Assistant.
+
+**Tech stack:** FastAPI · SQLite · React · TypeScript · TailwindCSS · Recharts
+
+### Quick Start
+
+#### Prerequisites
 - Python 3.11+
 - Node.js 18+
 
-### 1. Backend
+#### Backend
 
 ```bash
 cd backend
@@ -41,10 +87,9 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-API is now running at http://localhost:8000  
-Swagger docs at http://localhost:8000/docs
+API running at http://localhost:8000 — Swagger docs at http://localhost:8000/docs
 
-### 2. Frontend
+#### Frontend
 
 ```bash
 cd frontend
@@ -52,40 +97,24 @@ npm install
 npm run dev
 ```
 
-App is now running at http://localhost:5173
+App running at http://localhost:5173
 
----
-
-## Google OAuth2 Setup
-
-1. Open [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or use an existing one)
-3. Enable these APIs:
-   - **Fitness API** (Google Fit)
-   - **Google Sheets API**
-   - **Google Drive API**
-4. Go to **Credentials → Create Credentials → OAuth 2.0 Client ID**
-   - Application type: **Web application**
-   - Authorized redirect URIs: `http://localhost:8000/auth/google/callback`
-5. Copy the **Client ID** and **Client Secret** into `backend/.env`:
-   ```
-   GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=your-client-secret
-   ```
-6. Restart the backend
-7. In the app, go to **Settings** → **Connect Google Account**
-
----
-
-## Docker Compose
+#### Docker Compose
 
 ```bash
 cp backend/.env.example backend/.env    # edit with Google credentials
 docker compose up --build
+# Frontend → http://localhost:5173
+# Backend  → http://localhost:8000
 ```
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
+### Google OAuth2 Setup (standalone)
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/)
+2. Create an OAuth 2.0 Client ID (Web application)
+   - Redirect URI: `http://localhost:8000/auth/google/callback`
+3. Copy the **Client ID** and **Client Secret** into `backend/.env`
+4. Restart the backend and go to **Settings → Connect Google Account**
 
 ---
 
@@ -93,17 +122,18 @@ docker compose up --build
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/health/body-metrics` | List all weight entries |
-| POST | `/health/body-metrics` | Add new weight entry |
+| GET | `/health/body-metrics` | List weight entries |
+| POST | `/health/body-metrics` | Add weight entry |
 | PUT | `/health/body-metrics/{id}` | Update entry |
 | DELETE | `/health/body-metrics/{id}` | Delete entry |
-| GET | `/health/lab-results` | List lab results (filter by test_type) |
-| POST | `/health/lab-results` | Add new lab result |
+| GET | `/health/lab-results` | List lab results (filter by `test_type`) |
+| POST | `/health/lab-results` | Add lab result |
 | GET | `/health/vital-signs` | List BP / heart rate readings |
-| POST | `/health/vital-signs` | Add new vital sign reading |
+| POST | `/health/vital-signs` | Add vital sign reading |
 | GET | `/health/lab-types` | All supported test types + reference ranges |
+| GET | `/auth/me` | Current HA user identity (addon only) |
 | GET | `/auth/google/login` | Start Google OAuth2 flow |
-| GET | `/auth/google/status` | Current connected account |
+| GET | `/auth/google/status` | Connected Google account |
 | DELETE | `/auth/google/disconnect` | Remove stored credentials |
 | POST | `/sync/all` | Sync all unsynced records to Google |
 | POST | `/sync/body-metrics/{id}` | Sync single weight entry |
@@ -116,32 +146,19 @@ docker compose up --build
 
 ```
 health-recorder/
-├── backend/
+├── ha-addon/                    # Home Assistant addon (primary)
+│   ├── config.yaml              # HA addon manifest
+│   ├── Dockerfile
 │   ├── app/
-│   │   ├── main.py              # FastAPI app entry point
-│   │   ├── config.py            # Settings (env vars)
-│   │   ├── database.py          # SQLAlchemy + SQLite
-│   │   ├── models/health.py     # ORM models
-│   │   ├── schemas/health.py    # Pydantic schemas + reference ranges
-│   │   ├── routers/
-│   │   │   ├── health.py        # CRUD endpoints
-│   │   │   ├── auth.py          # OAuth2 endpoints
-│   │   │   └── sync.py          # Google sync endpoints
-│   │   └── services/
-│   │       ├── google_auth.py   # OAuth2 helper
-│   │       ├── google_fit.py    # Google Fit sync
-│   │       └── google_sheets.py # Google Sheets sync
-│   ├── requirements.txt
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── api/client.ts        # Axios API client
-│   │   ├── types/health.ts      # TypeScript interfaces
-│   │   ├── components/
-│   │   │   ├── forms/           # Entry forms
-│   │   │   └── charts/          # Recharts components
-│   │   └── pages/               # Dashboard, BodyMetrics, LabResults, VitalSigns, Settings
-│   └── package.json
+│   │   ├── dependencies.py      # HAUser + get_ha_user() dependency
+│   │   ├── models/health.py     # ORM models (with ha_user_id)
+│   │   ├── routers/             # health, auth, sync
+│   │   └── services/            # google_auth, google_fit, google_sheets
+│   └── ui/index.html            # Vanilla-JS SPA (no build step)
+├── backend/                     # Standalone FastAPI backend
+│   └── app/
+├── frontend/                    # Standalone React frontend
+│   └── src/
 ├── docker-compose.yml
 └── README.md
 ```
