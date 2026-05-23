@@ -8,7 +8,7 @@ on:
         required: true
 
 permissions:
-  contents: write    # push tag + create release + push dev branch
+  contents: write    # push tag + commit to main + create release
   packages: write    # push to ghcr.io
 
 jobs:
@@ -64,7 +64,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push (pre-release tag only — :latest is never updated)
+      - name: Build and push (pre-release tag only — :latest is never touched)
         uses: docker/build-push-action@v6
         with:
           context: ha-addon
@@ -84,48 +84,56 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache,mode=max
 
-  # ── Bump version in dev branch so HA pulls the new image ─────────────────────
-  update-dev-branch:
-    name: Update dev branch
+  # ── Bump version in ha-addon-dev/config.yaml so HA pulls the new image ────────
+  update-dev-config:
+    name: Bump ha-addon-dev version
     runs-on: ubuntu-latest
     needs: [validate, build-and-push]
+    outputs:
+      sha: ${{ steps.push.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
           fetch-depth: 0
 
-      - name: Bump version in ha-addon/config.yaml
+      - name: Update version in ha-addon-dev/config.yaml
         run: |
           python3 -c "
           import re
-          path = 'ha-addon/config.yaml'
+          path = 'ha-addon-dev/config.yaml'
           text = open(path).read()
           text = re.sub(r'^version:.*', 'version: \"${{ needs.validate.outputs.version }}\"', text, flags=re.MULTILINE)
           open(path, 'w').write(text)
           "
 
-      - name: Commit and push dev
+      - name: Commit and push to main
+        id: push
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add ha-addon/config.yaml
-          git diff --cached --quiet && echo "Version unchanged — skipping commit" || \
-            git commit -m "chore: bump dev version to ${{ needs.validate.outputs.version }}"
-          git push origin dev
+          git add ha-addon-dev/config.yaml
+          if git diff --cached --quiet; then
+            echo "Version unchanged — skipping commit"
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "chore: bump dev channel version to ${{ needs.validate.outputs.version }}"
+            git push origin main
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
 
-  # ── Create GitHub pre-release ─────────────────────────────────────────────────
+  # ── Tag and create GitHub pre-release ─────────────────────────────────────────
   github-prerelease:
     name: Create GitHub Pre-Release
     runs-on: ubuntu-latest
-    needs: [validate, update-dev-branch]
+    needs: [validate, update-dev-config]
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: main
           fetch-depth: 0
 
-      - name: Tag dev branch and publish pre-release
+      - name: Tag and publish pre-release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.validate.outputs.version }}
@@ -134,7 +142,8 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -f "${TAG}"
+          git fetch origin main
+          git tag -f "${TAG}" origin/main
           git push -f origin "${TAG}"
 
           cat > /tmp/notes.md << EOF
@@ -146,8 +155,9 @@ jobs:
           ### Install in Home Assistant (dev channel)
 
           1. Go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories**
-          2. Add: \`https://github.com/${REPO}/tree/dev\`
-          3. Install **Health Recorder (dev)** and start it
+          2. Add: \`https://github.com/${REPO}\`
+             *(if you already added it for the stable addon, skip this step)*
+          3. Find **Health Recorder (dev)** → **Install** → **Start**
           4. The **Health (dev)** panel appears in your sidebar
 
           The dev addon (\`health_recorder_dev\`) runs on port **8100** and can run

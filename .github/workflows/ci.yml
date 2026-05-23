@@ -26,7 +26,7 @@ jobs:
       - name: Lint YAML files
         uses: ibiqlik/action-yamllint@v3
         with:
-          file_or_dir: ha-addon/config.yaml ha-addon/build.yaml
+          file_or_dir: ha-addon/config.yaml ha-addon/build.yaml ha-addon-dev/config.yaml
           config_file: .yamllint.yml
 
       - name: Lint Dockerfile (hadolint)
@@ -35,18 +35,24 @@ jobs:
           dockerfile: ha-addon/Dockerfile
           ignore: DL3018,DL3013   # apk/pip --no-cache warnings suppressed
 
-      - name: Validate addon config.yaml
+      - name: Validate addon config.yaml files
         run: |
           python3 - <<'EOF'
           import yaml, sys
-          with open("ha-addon/config.yaml") as f:
-              cfg = yaml.safe_load(f)
+          configs = ["ha-addon/config.yaml", "ha-addon-dev/config.yaml"]
           required = ["name", "description", "version", "slug", "arch", "init"]
-          missing = [k for k in required if k not in cfg]
-          if missing:
-              print(f"ERROR: Missing required keys in config.yaml: {missing}")
+          ok = True
+          for path in configs:
+              with open(path) as f:
+                  cfg = yaml.safe_load(f)
+              missing = [k for k in required if k not in cfg]
+              if missing:
+                  print(f"ERROR: {path} missing required keys: {missing}")
+                  ok = False
+              else:
+                  print(f"{path} OK — version {cfg['version']}, slug {cfg['slug']}")
+          if not ok:
               sys.exit(1)
-          print(f"config.yaml OK — version {cfg['version']}, slug {cfg['slug']}")
           EOF
 
   # ── Python syntax ────────────────────────────────────────────────────────────
