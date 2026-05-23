@@ -1,4 +1,5 @@
 """HA addon entry point — FastAPI app that also serves the vanilla-JS UI."""
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -20,10 +21,18 @@ from .routers import auth, health, sync
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
 app = FastAPI(
     title="Health Recorder",
     description="Personal health data recorder with Google Fit & Sheets sync",
     version="1.0.0",
+    lifespan=lifespan,
     # Put Swagger docs under /docs so the catch-all doesn't swallow them
     docs_url="/docs",
     redoc_url="/redoc",
@@ -43,11 +52,6 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(sync.router)
-
-
-@app.on_event("startup")
-def on_startup() -> None:
-    init_db()
 
 
 @app.get("/healthz", tags=["meta"], include_in_schema=False)
