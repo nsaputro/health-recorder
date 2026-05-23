@@ -1,0 +1,171 @@
+name: Pre-Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Pre-release version (e.g. 0.3.0b1, 0.3.0rc1, 0.3.0-rc.1)"
+        required: true
+
+permissions:
+  contents: write    # push tag + create release + push dev branch
+  packages: write    # push to ghcr.io
+
+jobs:
+  # ── Guard: must be a pre-release version string ───────────────────────────────
+  validate:
+    name: Validate version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
+    steps:
+      - name: Check version has a pre-release suffix
+        id: ver
+        run: |
+          VERSION="${{ inputs.version }}"
+          # Reject pure X.Y.Z — those must go through the Release workflow
+          if echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Stable versions (X.Y.Z) must use the Release workflow."
+            echo "::error::Add a pre-release suffix: b1, rc1, -rc.1, -beta.1, etc."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION"    >> "$GITHUB_OUTPUT"
+
+  # ── Build & push one image per architecture (version tag only, no :latest) ────
+  build-and-push:
+    name: Build ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            base: ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.20
+            platform: linux/amd64
+          - arch: aarch64
+            base: ghcr.io/home-assistant/aarch64-base-python:3.12-alpine3.20
+            platform: linux/arm64
+    steps:
+      - uses: actions/checkout@v4   # builds from main's code
+
+      - name: Set up QEMU (for cross-platform builds)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (pre-release tag only — :latest is never updated)
+        uses: docker/build-push-action@v6
+        with:
+          context: ha-addon
+          push: true
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            BUILD_FROM=${{ matrix.base }}
+          tags: |
+            ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:${{ needs.validate.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=Health Recorder (${{ matrix.arch }}) pre-release
+            org.opencontainers.image.description=Developer pre-release — not for production
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.validate.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache,mode=max
+
+  # ── Bump version in dev branch so HA pulls the new image ─────────────────────
+  update-dev-branch:
+    name: Update dev branch
+    runs-on: ubuntu-latest
+    needs: [validate, build-and-push]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Bump version in ha-addon/config.yaml
+        run: |
+          python3 -c "
+          import re
+          path = 'ha-addon/config.yaml'
+          text = open(path).read()
+          text = re.sub(r'^version:.*', 'version: \"${{ needs.validate.outputs.version }}\"', text, flags=re.MULTILINE)
+          open(path, 'w').write(text)
+          "
+
+      - name: Commit and push dev
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ha-addon/config.yaml
+          git diff --cached --quiet && echo "Version unchanged — skipping commit" || \
+            git commit -m "chore: bump dev version to ${{ needs.validate.outputs.version }}"
+          git push origin dev
+
+  # ── Create GitHub pre-release ─────────────────────────────────────────────────
+  github-prerelease:
+    name: Create GitHub Pre-Release
+    runs-on: ubuntu-latest
+    needs: [validate, update-dev-branch]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+
+      - name: Tag dev branch and publish pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.validate.outputs.version }}
+          TAG: ${{ needs.validate.outputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f "${TAG}"
+          git push -f origin "${TAG}"
+
+          cat > /tmp/notes.md << EOF
+          ## Pre-release ${TAG}
+
+          This is a **developer pre-release** for testing before the stable release.
+          Regular users will not see this as an available update.
+
+          ### Install in Home Assistant (dev channel)
+
+          1. Go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories**
+          2. Add: \`https://github.com/${REPO}/tree/dev\`
+          3. Install **Health Recorder (dev)** and start it
+          4. The **Health (dev)** panel appears in your sidebar
+
+          The dev addon (\`health_recorder_dev\`) runs on port **8100** and can run
+          **alongside** the stable addon without any conflicts.
+
+          For the Google OAuth callback use:
+          \`http://<your-ha-ip>:8100/auth/google/callback\`
+
+          ### Pre-built images
+
+          | Architecture | Image |
+          |---|---|
+          | amd64   | \`ghcr.io/${REPO}/amd64-health_recorder:${VERSION}\`   |
+          | aarch64 | \`ghcr.io/${REPO}/aarch64-health_recorder:${VERSION}\` |
+          EOF
+
+          gh release create "${TAG}" \
+            --title "Health Recorder ${TAG} (pre-release)" \
+            --prerelease \
+            --notes-file /tmp/notes.md \
+            --verify-tag
