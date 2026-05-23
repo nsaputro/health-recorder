@@ -199,7 +199,7 @@ tr:hover td{background:rgba(3,169,244,.04)}
             <input type="number" step=".01" id="lr_val" placeholder="e.g. 180" required>
             <span class="hint" id="lr_hint"></span>
           </div>
-          <div class="fg"><label>Unit</label><input type="text" id="lr_unit" placeholder="mg/dL"></div>
+          <div class="fg"><label>Unit</label><select id="lr_unit"></select></div>
         </div>
         <div class="fg"><label>Lab Name <em>optional</em></label><input type="text" id="lr_lab" placeholder="e.g. City Lab"></div>
         <div class="fg"><label>Notes <em>optional</em></label><textarea id="lr_notes" placeholder="Fasting? Medication?"></textarea></div>
@@ -284,6 +284,23 @@ const S = {
   labTypes: [], labTypeMap: {},
   google: null,
   activeTab: 'overview',
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   Unit options per test type (mg/dL preferred over mmol/L)
+══════════════════════════════════════════════════════════════════ */
+const UNIT_OPTIONS = {
+  cholesterol_total: ['mg/dL', 'mmol/L'],
+  cholesterol_ldl:   ['mg/dL', 'mmol/L'],
+  cholesterol_hdl:   ['mg/dL', 'mmol/L'],
+  triglycerides:     ['mg/dL', 'mmol/L'],
+  glucose_fasting:   ['mg/dL', 'mmol/L'],
+  glucose_random:    ['mg/dL', 'mmol/L'],
+  glucose_hba1c:     ['%'],
+  uric_acid:         ['mg/dL', 'mmol/L'],
+  creatinine:        ['mg/dL', 'μmol/L'],
+  hemoglobin:        ['g/dL', 'g/L'],
+  other:             ['mg/dL', 'mmol/L', 'g/dL', 'g/L', '%', 'units'],
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -695,14 +712,21 @@ async function disconnectGoogle() {
 function onTypeChange() {
   const t = S.labTypeMap[document.getElementById('lr_type').value];
   if (!t) return;
-  document.getElementById('lr_unit').value = t.unit;
+
+  // Populate unit dropdown; mg/dL is first (preferred) for most types
+  const opts = UNIT_OPTIONS[t.test_type] || [t.unit];
+  const unitSel = document.getElementById('lr_unit');
+  unitSel.innerHTML = opts.map(u => `<option value="${u}">${u}</option>`).join('');
+  unitSel.value = opts[0]; // default = first option (mg/dL preferred)
+
+  // Reference range hint uses the default unit
   const r = REF[t.test_type];
   if (r) {
     const parts = [];
     if (r.lo_normal) parts.push(`Low < ${r.lo_normal}`);
     if (r.hi_normal && r.hi_normal<999) parts.push(`Normal ≤ ${r.hi_normal}`);
     if (r.hi_border && r.hi_border<999) parts.push(`Borderline ≤ ${r.hi_border}`);
-    document.getElementById('lr_hint').textContent = parts.join(' · ') + (parts.length ? ' '+t.unit : '');
+    document.getElementById('lr_hint').textContent = parts.join(' · ') + (parts.length ? ' '+opts[0] : '');
   } else {
     document.getElementById('lr_hint').textContent = '';
   }
