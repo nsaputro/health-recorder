@@ -29,7 +29,7 @@ jobs:
           config_file: .yamllint.yml
 
       - name: Lint Dockerfile (hadolint)
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: ha-addon/Dockerfile
           ignore: DL3018,DL3013   # apk/pip --no-cache warnings suppressed
