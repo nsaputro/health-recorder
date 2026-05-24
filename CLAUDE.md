@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Plan
+
+**Always read `PROJECT_PLAN.md` before implementing any new feature.**
+
+- Check which phase the feature belongs to and confirm it is listed there.
+- When you open a PR for a feature, tick its checkbox in `PROJECT_PLAN.md` (change `⬜` → `✅`) and include the updated file in the same commit.
+- If a feature is not yet in the plan, add it to the appropriate phase before starting work.
+
 ## Git Policy
 
 **Never push directly to `main`.** All changes must go through a pull request:
