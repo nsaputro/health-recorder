@@ -8,6 +8,12 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+### Added
+- Unit tests for both the HA addon (`ha-addon/tests/`) and the standalone backend
+  (`backend/tests/`). Tests cover CRUD operations, BMI computation, input validation,
+  multi-user isolation, and impersonation prevention (34 addon tests + 23 backend tests).
+- CI now runs `pytest` on every push and PR before the Docker build step.
+
 ## [0.2.0] - unreleased
 
 ### Added
