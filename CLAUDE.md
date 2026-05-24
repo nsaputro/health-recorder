@@ -59,6 +59,27 @@ docker compose up --build
 # frontend → http://localhost:5173   backend → http://localhost:8000
 ```
 
+### Tests
+
+Unit tests live in `ha-addon/tests/` and `backend/tests/`. Run them locally before opening a PR:
+
+```bash
+# HA addon tests (34 tests — CRUD, user isolation, impersonation prevention)
+cd ha-addon
+pip install -r requirements.txt -r requirements-test.txt
+python -m pytest tests/ -v
+
+# Standalone backend tests (23 tests — CRUD, input validation)
+cd backend
+pip install -r requirements.txt -r requirements-test.txt
+python -m pytest tests/ -v
+```
+
+Key test helpers (in `*/tests/conftest.py`):
+- `client` fixture: fresh in-memory SQLite DB per test via `StaticPool`
+- `HEADERS_A` / `HEADERS_B`: simulate two HA ingress users (Alice / Bob)
+- `HEADERS_DIRECT`: empty dict — simulates direct port-8099 access (no HA headers)
+
 ### Lint (CI checks run these)
 ```bash
 yamllint -c .yamllint.yml ha-addon/config.yaml ha-addon/build.yaml
