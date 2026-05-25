@@ -31,32 +31,42 @@ to check whether the PR is still open. If it has already been merged:
 
 ## Versioning
 
-**Before setting a version in any PR, always check the latest GitHub release first:**
+**Before touching any version field, check both the latest GitHub release and the current
+`ha-addon/config.yaml` version:**
 
 ```
 mcp__github__get_latest_release  owner=nsaputro  repo=health-recorder
 ```
 
-The next version must be higher than the latest release. Never reuse an already-released version number. Use semantic versioning (`MAJOR.MINOR.PATCH`):
+**Version bump decision:**
+- If `ha-addon/config.yaml` already has a version **higher than the latest release** (i.e. it is
+  unreleased), **reuse that version as-is** — do not bump it further.
+- Only bump the version when **explicitly asked to**, or when the change warrants a new
+  `MINOR` / `MAJOR` increment (new feature set, breaking change).
+- Never reuse an already-released version number.
+
+Use semantic versioning (`MAJOR.MINOR.PATCH`):
 - `PATCH` bump (e.g. `0.1.2` → `0.1.3`) for bug fixes and small improvements
 - `MINOR` bump (e.g. `0.1.x` → `0.2.0`) for new features
 - `MAJOR` bump for breaking changes
 
-Update `ha-addon/config.yaml` `version` field in the same PR as the change.
+Update `ha-addon/config.yaml` `version` field only when a bump is warranted (see above).
 
 ### Pre-release version
 
-**Every feature PR must also bump `ha-addon-dev/config.yaml` `version`** to a pre-release
-that matches the main version, so the dev channel is ready for testing immediately.
+**Every feature PR must also set `ha-addon-dev/config.yaml` `version`** to a pre-release
+that matches the current main version, so the dev channel is ready for testing immediately.
 
 The format is `<main-version>b<N>` where N = (latest released pre-release for that version) + 1.
 
 Steps:
-1. Check what the main version will be (from `ha-addon/config.yaml` in your PR)
+1. Read the main version from `ha-addon/config.yaml` (after applying any bump above)
 2. Call `mcp__github__list_releases` and find the highest `bN` tag matching that version
    (e.g. if main version is `0.3.0` look for `v0.3.0b*` tags)
 3. Set `ha-addon-dev/config.yaml` `version` to `<main-version>b<N+1>`
    — if no matching pre-release exists yet, start at `b1`
+4. If the dev config already has the correct `<main-version>bN` and you are not bumping
+   the main version, still increment N so each PR produces a new testable pre-release.
 
 Example: main version `0.3.0`, latest release is `v0.3.0b2` → set dev version to `"0.3.0b3"`.
 
