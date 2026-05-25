@@ -38,10 +38,17 @@ jobs:
       - name: Validate addon config.yaml files
         run: |
           python3 - <<'EOF'
-          import yaml, sys
+          import yaml, sys, re
+
+          def ver_tuple(v):
+              """Parse the MAJOR.MINOR.PATCH prefix of a version string into a tuple."""
+              m = re.match(r"(\d+)\.(\d+)\.(\d+)", v)
+              return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
+
           configs = ["ha-addon/config.yaml", "ha-addon-dev/config.yaml"]
           required = ["name", "description", "version", "slug", "arch", "init"]
           ok = True
+          versions = {}
           for path in configs:
               with open(path) as f:
                   cfg = yaml.safe_load(f)
@@ -50,7 +57,33 @@ jobs:
                   print(f"ERROR: {path} missing required keys: {missing}")
                   ok = False
               else:
+                  versions[path] = cfg["version"]
                   print(f"{path} OK — version {cfg['version']}, slug {cfg['slug']}")
+
+          # Cross-file invariants (only checked when NEXT_VERSION exists)
+          try:
+              next_ver = open("ha-addon/NEXT_VERSION").read().strip()
+          except FileNotFoundError:
+              next_ver = None
+
+          if next_ver:
+              print(f"ha-addon/NEXT_VERSION : {next_ver}")
+              released = versions.get("ha-addon/config.yaml", "")
+              dev      = versions.get("ha-addon-dev/config.yaml", "")
+
+              if released and ver_tuple(next_ver) <= ver_tuple(released):
+                  print(f"ERROR: NEXT_VERSION ({next_ver}) must be greater than "
+                        f"config.yaml released version ({released})")
+                  ok = False
+              else:
+                  print(f"Version ordering OK: released={released} < next={next_ver}")
+
+              if dev and not dev.startswith(next_ver):
+                  print(f"ERROR: ha-addon-dev version ({dev}) must start with NEXT_VERSION ({next_ver})")
+                  ok = False
+              elif dev:
+                  print(f"Dev pre-release OK: {dev} matches NEXT_VERSION {next_ver}")
+
           if not ok:
               sys.exit(1)
           EOF

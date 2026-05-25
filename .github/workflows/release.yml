@@ -1,24 +1,21 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"   # e.g. v1.0.0, v2.3.1
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release (without 'v' prefix, e.g. 0.1.0)"
+        description: "Version to release (must match ha-addon/NEXT_VERSION, without 'v' prefix, e.g. 0.3.0)"
         required: true
         default: "0.1.0"
 
 permissions:
-  contents: write    # create GitHub release + push tag
+  contents: write    # create GitHub release + push tag + commit config.yaml
   packages: write    # push to ghcr.io
 
 jobs:
-  # ── Guard: version in config.yaml must match the tag ─────────────────────────
-  check-version:
-    name: Check version consistency
+  # ── Guard: validate, write config.yaml, tag ──────────────────────────────────
+  prepare-release:
+    name: Prepare release
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.ver.outputs.version }}
@@ -28,42 +25,47 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract & validate version
+      - name: Validate version against NEXT_VERSION
         id: ver
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.version }}"
-          else
-            TAG="${GITHUB_REF_NAME#v}"   # strip leading "v" from tag push
-          fi
+          VERSION="${{ inputs.version }}"
+          NEXT=$(cat ha-addon/NEXT_VERSION | tr -d '[:space:]')
 
-          CFG=$(python3 -c "import yaml; print(yaml.safe_load(open('ha-addon/config.yaml'))['version'])")
-          echo "Tag version:    $TAG"
-          echo "config.yaml:    $CFG"
+          echo "Requested version : $VERSION"
+          echo "NEXT_VERSION file : $NEXT"
 
-          # Validate BEFORE creating any tag
-          if [ "$TAG" != "$CFG" ]; then
-            echo "::error::Tag version ($TAG) does not match config.yaml version ($CFG)."
-            echo "::error::Update ha-addon/config.yaml before tagging."
+          if [ "$VERSION" != "$NEXT" ]; then
+            echo "::error::Requested version ($VERSION) does not match ha-addon/NEXT_VERSION ($NEXT)."
+            echo "::error::Update ha-addon/NEXT_VERSION before releasing."
             exit 1
           fi
 
-          # Versions match — now create and push the tag (workflow_dispatch only)
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag -f "v${TAG}"
-            git push -f origin "v${TAG}"
-          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION"    >> "$GITHUB_OUTPUT"
 
-          echo "version=$TAG" >> "$GITHUB_OUTPUT"
-          echo "tag=v$TAG" >> "$GITHUB_OUTPUT"
+      - name: Write version into config.yaml and commit to main
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stamp the release version into config.yaml
+          sed -i "s/^version:.*/version: \"${VERSION}\"/" ha-addon/config.yaml
+
+          git add ha-addon/config.yaml
+          git commit -m "chore: release v${VERSION} — stamp config.yaml"
+          git push origin HEAD:main
+
+          # Tag the release commit and push
+          git tag "v${VERSION}"
+          git push origin "v${VERSION}"
 
   # ── Build & push one image per architecture ───────────────────────────────────
   build-and-push:
     name: Build ${{ matrix.arch }}
     runs-on: ubuntu-latest
-    needs: check-version
+    needs: prepare-release
     strategy:
       fail-fast: false
       matrix:
@@ -78,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.check-version.outputs.tag }}
+          ref: ${{ needs.prepare-release.outputs.tag }}
 
       - name: Set up QEMU (for cross-platform builds)
         uses: docker/setup-qemu-action@v4
@@ -102,14 +104,14 @@ jobs:
           build-args: |
             BUILD_FROM=${{ matrix.base }}
           tags: |
-            ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:${{ needs.check-version.outputs.version }}
+            ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:${{ needs.prepare-release.outputs.version }}
             ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:latest
           labels: |
             org.opencontainers.image.title=Health Recorder (${{ matrix.arch }})
             org.opencontainers.image.description=Personal health data recorder — HA addon
             org.opencontainers.image.url=https://github.com/${{ github.repository }}
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.version=${{ needs.check-version.outputs.version }}
+            org.opencontainers.image.version=${{ needs.prepare-release.outputs.version }}
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache,mode=max
@@ -118,18 +120,18 @@ jobs:
   github-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: [check-version, build-and-push]
+    needs: [prepare-release, build-and-push]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ needs.check-version.outputs.tag }}
+          ref: ${{ needs.prepare-release.outputs.tag }}
 
       - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.check-version.outputs.version }}
-          TAG: ${{ needs.check-version.outputs.tag }}
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+          TAG: ${{ needs.prepare-release.outputs.tag }}
         run: |
           gh release create "${TAG}" \
             --title "Health Recorder v${VERSION}" \
@@ -144,8 +146,8 @@ jobs:
       - name: Append install instructions to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.check-version.outputs.version }}
-          TAG: ${{ needs.check-version.outputs.tag }}
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+          TAG: ${{ needs.prepare-release.outputs.tag }}
           REPO: ${{ github.repository }}
         run: |
           BODY=$(gh release view "${TAG}" --json body -q .body)
