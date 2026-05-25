@@ -31,18 +31,26 @@ to check whether the PR is still open. If it has already been merged:
 
 ## Versioning
 
-**Before setting a version in any PR, always check the latest GitHub release first:**
+**Before touching any version field, check both the latest GitHub release and the current
+`ha-addon/config.yaml` version:**
 
 ```
 mcp__github__get_latest_release  owner=nsaputro  repo=health-recorder
 ```
 
-The next version must be higher than the latest release. Never reuse an already-released version number. Use semantic versioning (`MAJOR.MINOR.PATCH`):
+**Version bump decision:**
+- If `ha-addon/config.yaml` already has a version **higher than the latest release** (i.e. it is
+  unreleased), **reuse that version as-is** — do not bump it further.
+- Only bump the version when **explicitly asked to**, or when the change warrants a new
+  `MINOR` / `MAJOR` increment (new feature set, breaking change).
+- Never reuse an already-released version number.
+
+Use semantic versioning (`MAJOR.MINOR.PATCH`):
 - `PATCH` bump (e.g. `0.1.2` → `0.1.3`) for bug fixes and small improvements
 - `MINOR` bump (e.g. `0.1.x` → `0.2.0`) for new features
 - `MAJOR` bump for breaking changes
 
-Update `ha-addon/config.yaml` `version` field in the same PR as the change.
+Update `ha-addon/config.yaml` `version` field only when a bump is warranted (see above).
 
 ### Pre-release version
 
