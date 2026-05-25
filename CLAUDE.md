@@ -9,6 +9,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. Commit changes and push the branch
 3. Open a PR targeting `main` via the GitHub MCP tools (`mcp__github__create_pull_request`)
 
+### PR hygiene rules
+
+**After creating a PR**, always call `mcp__github__pull_request_read` to confirm the PR is
+actually open before reporting the link to the user. Do not assume `create_pull_request`
+succeeded — verify state is `"open"` first.
+
+**Before pushing more commits to an existing PR branch**, call `mcp__github__pull_request_read`
+to check whether the PR is still open. If it has already been merged:
+1. Create a new branch from the latest `main`
+2. Cherry-pick the pending commits onto the new branch
+3. Push the new branch and open a fresh PR
+
 ## Versioning
 
 **Before setting a version in any PR, always check the latest GitHub release first:**
