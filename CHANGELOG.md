@@ -8,13 +8,46 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+## [0.3.0] - unreleased
+
+### Added
+- Trend charts for all metric types in both the HA addon and the standalone frontend:
+  - **Weight & BMI chart** (line chart with dual axes for weight and BMI overlay)
+  - **Blood pressure chart** (dual-line: systolic + diastolic, reference lines at 120/80)
+  - **Heart rate chart** (single line, reference lines at 60 and 100 bpm)
+  - **Lab result charts** (one chart per test type, selected from a dropdown)
+- Time-range filter (1M / 3M / 6M / 1Y / All) on Weight, Vital Signs, and Lab Results pages.
+  Selected range is sent as a `?since=<ISO datetime>` query parameter so only the relevant
+  records are fetched from the server.
+- Trend summary stats (Latest / Avg / Min / Max) displayed below each chart.
+- `?since=` query parameter on `GET /health/body-metrics`, `/health/lab-results`,
+  and `/health/vital-signs` in both the HA addon and the standalone backend.
+- HA addon: Chart.js 4.4 loaded from CDN (no build step required).
+- Standalone frontend: extracted `VitalSignChart` and `HeartRateChart` Recharts components;
+  new `TimeRangeFilter` and `TrendSummary` reusable components.
+
+## [0.2.0] - unreleased
+
 ### Added
 - Unit tests for both the HA addon (`ha-addon/tests/`) and the standalone backend
   (`backend/tests/`). Tests cover CRUD operations, BMI computation, input validation,
   multi-user isolation, and impersonation prevention (34 addon tests + 23 backend tests).
 - CI now runs `pytest` on every push and PR before the Docker build step.
+- Multi-user support: each Home Assistant user now has their own isolated health data.
+  Authentication is automatic — HA's ingress headers identify the logged-in user with no
+  extra login required.
+- Username display: the logged-in HA user's display name appears in the status bar.
+- New `GET /auth/me` endpoint returns the current user's HA identity.
 
-## [0.2.0] - unreleased
+### Security
+- User headers are only trusted when `X-Ingress-Path` is also present (injected exclusively
+  by the HA supervisor). Requests to port 8099 without this header are treated as anonymous
+  (`ha_user_id = ""`), preventing impersonation via the direct port.
+
+### Changed
+- Google credentials are now stored per HA user; each user connects their own Google account.
+- OAuth state parameter carries the HA user ID so the callback (port 8099, no ingress
+  headers) can correctly attribute the credential to the right user.
 
 ### Added
 - Multi-user support: each Home Assistant user now has their own isolated health data.
@@ -92,7 +125,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/nsaputro/health-recorder/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nsaputro/health-recorder/compare/v0.1.4...v0.2.0
 [0.1.5]: https://github.com/nsaputro/health-recorder/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/nsaputro/health-recorder/compare/v0.1.3...v0.1.4

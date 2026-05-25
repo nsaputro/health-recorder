@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend,
-} from 'recharts'
 import { vitalSigns as api } from '../api/client'
 import VitalSignForm from '../components/forms/VitalSignForm'
+import VitalSignChart from '../components/charts/VitalSignChart'
+import HeartRateChart from '../components/charts/HeartRateChart'
+import TrendSummary from '../components/charts/TrendSummary'
+import TimeRangeFilter, { sinceFromRange, type RangeLabel } from '../components/charts/TimeRangeFilter'
 import type { VitalSignCreate } from '../types/health'
 
 function BPStatus({ s, d }: { s: number | null; d: number | null }) {
@@ -19,10 +20,11 @@ function BPStatus({ s, d }: { s: number | null; d: number | null }) {
 export default function VitalSignsPage() {
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
+  const [range, setRange] = useState<{ label: RangeLabel; months: number }>({ label: '3M', months: 3 })
 
   const { data: records = [], isLoading } = useQuery({
-    queryKey: ['vital-signs'],
-    queryFn: () => api.list({ limit: 100 }),
+    queryKey: ['vital-signs', range.months],
+    queryFn: () => api.list({ limit: 500, since: sinceFromRange(range.months) }),
   })
 
   const createMutation = useMutation({
@@ -47,14 +49,12 @@ export default function VitalSignsPage() {
     await createMutation.mutateAsync(data)
   }
 
-  const chartData = [...records]
-    .sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime())
-    .map((r) => ({
-      date: format(parseISO(r.measured_at), 'MMM d'),
-      systolic:  r.systolic_bp,
-      diastolic: r.diastolic_bp,
-      hr:        r.heart_rate,
-    }))
+  // Sort ascending for TrendSummary (latest = last element)
+  const sortedAsc = [...records].sort(
+    (a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime()
+  )
+  const bpRecords = sortedAsc.filter((r) => r.systolic_bp != null && r.diastolic_bp != null)
+  const hrRecords = sortedAsc.filter((r) => r.heart_rate != null)
 
   return (
     <div className="space-y-6">
@@ -72,24 +72,52 @@ export default function VitalSignsPage() {
         </div>
       )}
 
-      {records.length > 1 && (
-        <div className="card">
-          <h2 className="text-base font-semibold mb-4">Blood Pressure Trend</h2>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis domain={[40, 180]} tick={{ fontSize: 11 }} unit=" mmHg" />
-              <Tooltip />
-              <Legend />
-              <ReferenceLine y={120} stroke="#22c55e" strokeDasharray="3 3" label={{ value: '120', fontSize: 9, fill: '#22c55e' }} />
-              <ReferenceLine y={80}  stroke="#22c55e" strokeDasharray="3 3" label={{ value: '80',  fontSize: 9, fill: '#22c55e' }} />
-              <Line type="monotone" dataKey="systolic"  name="Systolic"  stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="diastolic" name="Diastolic" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
+      {/* Chart card */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold">Trend</h2>
+          <TimeRangeFilter
+            value={range.label}
+            onChange={(label, months) => setRange({ label, months })}
+          />
         </div>
-      )}
+
+        {records.length > 1 ? (
+          <>
+            {/* Blood pressure chart */}
+            {bpRecords.length > 1 && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">
+                  Blood Pressure
+                </p>
+                <VitalSignChart data={records} />
+                <TrendSummary
+                  values={bpRecords.map((r) => r.systolic_bp as number)}
+                  unit="mmHg sys"
+                  decimals={0}
+                />
+              </div>
+            )}
+
+            {/* Heart rate chart */}
+            {hrRecords.length > 1 && (
+              <div className={bpRecords.length > 1 ? 'mt-6' : ''}>
+                <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">
+                  Heart Rate
+                </p>
+                <HeartRateChart data={records} />
+                <TrendSummary
+                  values={hrRecords.map((r) => r.heart_rate as number)}
+                  unit="bpm"
+                  decimals={0}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-gray-400 text-sm">Add 2+ readings to see trend charts.</p>
+        )}
+      </div>
 
       <div className="card">
         <h2 className="text-base font-semibold mb-4">All Readings ({records.length})</h2>

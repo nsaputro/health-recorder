@@ -257,16 +257,16 @@ status (success|error), records_synced, error_message, created_at
 - ✅ Unit tests: 34 ha-addon tests (CRUD, user isolation, impersonation) + 23 backend tests (CRUD, validation)
 - ✅ CI runs pytest on every push and PR before Docker build
 
-### Phase 3 — Trend Charts (v0.3.0) ⬜
+### Phase 3 — Trend Charts (v0.3.0) 🔄
 
-- ⬜ **Weight & BMI chart**: line chart showing weight (and BMI overlay) over time; reference BMI bands (underweight / normal / overweight / obese) as background shading
-- ⬜ **Blood pressure chart**: dual-line chart for systolic and diastolic over time; hypertension stage bands (normal < 120/80, elevated, stage 1, stage 2) as coloured zones
-- ⬜ **Heart rate chart**: line chart over time; resting HR normal range (60–100 bpm) reference band
-- ⬜ **Lab result charts**: one chart per test type (selected from a dropdown); value plotted over time with normal / borderline / high colour-coded bands from `LAB_REFERENCE_RANGES`
-- ⬜ **HA addon**: charts rendered with a lightweight canvas library (no npm; bundled inline or loaded from CDN with integrity hash)
-- ⬜ **Standalone frontend**: charts built with Recharts (already in the stack)
-- ⬜ **Time-range filter**: 1 month / 3 months / 6 months / 1 year / all time
-- ⬜ **Trend summary**: min / max / average shown below each chart for the selected period
+- ✅ **Weight & BMI chart**: line chart showing weight (and BMI overlay) over time; reference BMI bands (underweight / normal / overweight / obese) as background shading
+- ✅ **Blood pressure chart**: dual-line chart for systolic and diastolic over time; reference lines at 120/80
+- ✅ **Heart rate chart**: line chart over time; reference lines at 60 and 100 bpm
+- ✅ **Lab result charts**: one chart per test type (selected from a dropdown); value plotted over time with reference lines from `LAB_REFERENCE_RANGES`
+- ✅ **HA addon**: charts rendered with Chart.js 4.4 loaded from CDN (no build step)
+- ✅ **Standalone frontend**: charts built with Recharts; extracted `VitalSignChart`, `HeartRateChart`, `TimeRangeFilter`, `TrendSummary` components
+- ✅ **Time-range filter**: 1 month / 3 months / 6 months / 1 year / all time; backed by `?since=` API param
+- ✅ **Trend summary**: Latest / Avg / Min / Max shown below each chart for the selected period
 
 ### Phase 4 — Frontend Modernisation (v0.4.0) ⬜
 
@@ -299,7 +299,7 @@ Migration steps (in order):
 | v0.1.0 | MVP: health CRUD + Google sync + HA addon | ✅ Released |
 | v0.1.1 – v0.1.4 | HA ingress fix, HA-themed UI, cache headers, dark mode | ✅ Released |
 | v0.2.0 | Multi-user + impersonation prevention + unit tests | 🔄 In progress |
-| v0.3.0 | Trend charts for all metric types | ⬜ Planned |
+| v0.3.0 | Trend charts for all metric types | 🔄 In progress |
 | v0.4.0 | Frontend modernisation: React 19, Tailwind v4, Router 7 | ⬜ Planned |
 
 ---

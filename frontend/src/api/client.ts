@@ -15,7 +15,7 @@ const http = axios.create({
 
 // ── Body Metrics ─────────────────────────────────────────────────────────────
 export const bodyMetrics = {
-  list: (params?: { limit?: number; offset?: number }) =>
+  list: (params?: { limit?: number; offset?: number; since?: string }) =>
     http.get<BodyMetric[]>('/health/body-metrics', { params }).then((r) => r.data),
   create: (data: BodyMetricCreate) =>
     http.post<BodyMetric>('/health/body-metrics', data).then((r) => r.data),
@@ -27,7 +27,7 @@ export const bodyMetrics = {
 
 // ── Lab Results ───────────────────────────────────────────────────────────────
 export const labResults = {
-  list: (params?: { test_type?: string; limit?: number; offset?: number }) =>
+  list: (params?: { test_type?: string; limit?: number; offset?: number; since?: string }) =>
     http.get<LabResult[]>('/health/lab-results', { params }).then((r) => r.data),
   create: (data: LabResultCreate) =>
     http.post<LabResult>('/health/lab-results', data).then((r) => r.data),
@@ -41,7 +41,7 @@ export const labResults = {
 
 // ── Vital Signs ────────────────────────────────────────────────────────────────
 export const vitalSigns = {
-  list: (params?: { limit?: number; offset?: number }) =>
+  list: (params?: { limit?: number; offset?: number; since?: string }) =>
     http.get<VitalSign[]>('/health/vital-signs', { params }).then((r) => r.data),
   create: (data: VitalSignCreate) =>
     http.post<VitalSign>('/health/vital-signs', data).then((r) => r.data),

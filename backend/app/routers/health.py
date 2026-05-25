@@ -30,17 +30,15 @@ def _compute_bmi(weight_kg: float, height_cm: Optional[float]) -> Optional[float
 
 @router.get("/body-metrics", response_model=List[BodyMetricRead])
 def list_body_metrics(
+    since: Optional[datetime] = None,
     limit: int = Query(default=100, le=500),
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
-    return (
-        db.query(BodyMetric)
-        .order_by(BodyMetric.measured_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    q = db.query(BodyMetric)
+    if since:
+        q = q.filter(BodyMetric.measured_at >= since)
+    return q.order_by(BodyMetric.measured_at.desc()).offset(offset).limit(limit).all()
 
 
 @router.post("/body-metrics", response_model=BodyMetricRead, status_code=201)
@@ -98,6 +96,7 @@ def delete_body_metric(record_id: int, db: Session = Depends(get_db)):
 @router.get("/lab-results", response_model=List[LabResultRead])
 def list_lab_results(
     test_type: Optional[str] = None,
+    since: Optional[datetime] = None,
     limit: int = Query(default=200, le=500),
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -105,6 +104,8 @@ def list_lab_results(
     q = db.query(LabResult)
     if test_type:
         q = q.filter(LabResult.test_type == test_type)
+    if since:
+        q = q.filter(LabResult.measured_at >= since)
     return q.order_by(LabResult.measured_at.desc()).offset(offset).limit(limit).all()
 
 
@@ -159,17 +160,15 @@ def delete_lab_result(record_id: int, db: Session = Depends(get_db)):
 
 @router.get("/vital-signs", response_model=List[VitalSignRead])
 def list_vital_signs(
+    since: Optional[datetime] = None,
     limit: int = Query(default=100, le=500),
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
-    return (
-        db.query(VitalSign)
-        .order_by(VitalSign.measured_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    q = db.query(VitalSign)
+    if since:
+        q = q.filter(VitalSign.measured_at >= since)
+    return q.order_by(VitalSign.measured_at.desc()).offset(offset).limit(limit).all()
 
 
 @router.post("/vital-signs", response_model=VitalSignRead, status_code=201)
