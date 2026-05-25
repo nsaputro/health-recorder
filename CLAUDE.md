@@ -31,42 +31,59 @@ to check whether the PR is still open. If it has already been merged:
 
 ## Versioning
 
-**Before touching any version field, check both the latest GitHub release and the current
-`ha-addon/config.yaml` version:**
+### How it works
+
+`ha-addon/config.yaml` **always holds the last *released* version** on `main`. The HA
+supervisor reads this file directly from the repo to decide whether to offer an update —
+so it must never show a version whose Docker images don't exist yet.
+
+The upcoming version lives in **`ha-addon/NEXT_VERSION`** (plain text, e.g. `0.3.0`).
+PRs update that file; `config.yaml` is only touched by the release workflow at cut time.
 
 ```
-mcp__github__get_latest_release  owner=nsaputro  repo=health-recorder
+ha-addon/NEXT_VERSION    ← source of truth for the next release  (updated in PRs)
+ha-addon/config.yaml     ← last released version                 (only release workflow writes this)
+ha-addon-dev/config.yaml ← NEXT_VERSIONbN dev pre-release        (updated in PRs)
 ```
 
-**Version bump decision:**
-- If `ha-addon/config.yaml` already has a version **higher than the latest release** (i.e. it is
-  unreleased), **reuse that version as-is** — do not bump it further.
-- Only bump the version when **explicitly asked to**, or when the change warrants a new
-  `MINOR` / `MAJOR` increment (new feature set, breaking change).
-- Never reuse an already-released version number.
+### Bumping the next version
+
+Read `ha-addon/NEXT_VERSION` and the latest GitHub release:
+
+```
+mcp__github__list_releases  owner=nsaputro  repo=health-recorder
+```
+
+- **Reuse** the current `NEXT_VERSION` across multiple PRs targeting the same release —
+  don't bump it on every PR.
+- **Bump** `NEXT_VERSION` only when explicitly asked to, or when the change warrants a
+  new `MINOR` / `MAJOR` increment (new feature set, breaking change).
+- `NEXT_VERSION` must always be higher than the latest released version.
 
 Use semantic versioning (`MAJOR.MINOR.PATCH`):
-- `PATCH` bump (e.g. `0.1.2` → `0.1.3`) for bug fixes and small improvements
-- `MINOR` bump (e.g. `0.1.x` → `0.2.0`) for new features
-- `MAJOR` bump for breaking changes
+- `PATCH` (e.g. `0.1.2` → `0.1.3`) — bug fixes, small improvements
+- `MINOR` (e.g. `0.1.x` → `0.2.0`) — new features
+- `MAJOR` — breaking changes
 
-Update `ha-addon/config.yaml` `version` field only when a bump is warranted (see above).
+**Never edit `ha-addon/config.yaml` version directly** — the release workflow owns that field.
 
-### Pre-release version
+### Pre-release version (dev channel)
 
-**Every feature PR must also bump `ha-addon-dev/config.yaml` `version`** to a pre-release
-that matches the main version, so the dev channel is ready for testing immediately.
+**Every feature PR must bump `ha-addon-dev/config.yaml` `version`** to a pre-release that
+matches `NEXT_VERSION`, so the dev channel is ready for testing immediately.
 
-The format is `<main-version>b<N>` where N = (latest released pre-release for that version) + 1.
+The format is `<NEXT_VERSION>b<N>` where N = (highest released bN for that version) + 1.
 
 Steps:
-1. Check what the main version will be (from `ha-addon/config.yaml` in your PR)
-2. Call `mcp__github__list_releases` and find the highest `bN` tag matching that version
-   (e.g. if main version is `0.3.0` look for `v0.3.0b*` tags)
-3. Set `ha-addon-dev/config.yaml` `version` to `<main-version>b<N+1>`
+1. Read `NEXT_VERSION` from `ha-addon/NEXT_VERSION`
+2. Call `mcp__github__list_releases` and find the highest `bN` tag for that version
+   (e.g. for `NEXT_VERSION=0.3.0` look for `v0.3.0b*` tags)
+3. Set `ha-addon-dev/config.yaml` `version` to `<NEXT_VERSION>b<N+1>`
    — if no matching pre-release exists yet, start at `b1`
+4. If the dev config already has `<NEXT_VERSION>bN` (unreleased), still increment N so
+   each PR produces a distinct testable build
 
-Example: main version `0.3.0`, latest release is `v0.3.0b2` → set dev version to `"0.3.0b3"`.
+Example: `NEXT_VERSION=0.3.0`, latest release is `v0.3.0b2` → set dev version to `"0.3.0b3"`.
 
 ## Changelog
 
@@ -180,14 +197,15 @@ All supported test types, their display names, default units, and clinical refer
 - Python `ast.parse` syntax check on `ha-addon/app/` and `backend/app/`
 - Docker build test for `linux/amd64` (no push)
 
-**Release** (`.github/workflows/release.yml`) is triggered by pushing a `v*.*.*` tag **or** via `workflow_dispatch` (preferred — enter version in the GitHub Actions UI):
-1. Validates that the tag version matches `ha-addon/config.yaml` `version` field
-2. Builds and pushes Docker images to `ghcr.io/nsaputro/health-recorder/{arch}-health_recorder` for amd64 + aarch64
-3. Creates a GitHub release with install instructions
+**Release** (`.github/workflows/release.yml`) is triggered via `workflow_dispatch` only
+(enter the version in the GitHub Actions UI). The workflow:
+1. Validates the input version matches `ha-addon/NEXT_VERSION`
+2. Writes the version into `ha-addon/config.yaml`, commits to `main`, and creates the tag
+3. Builds and pushes Docker images to `ghcr.io/nsaputro/health-recorder/{arch}-health_recorder`
+4. Creates a GitHub release with install instructions
 
 **To release a new version:**
-1. Check latest release: `mcp__github__get_latest_release`
-2. Bump `version` in `ha-addon/config.yaml` to next version
-3. Move `## [Unreleased]` entries in `CHANGELOG.md` to `## [x.y.z] - YYYY-MM-DD` and update comparison links
-4. Merge via PR to `main`
-5. Go to Actions → Release → Run workflow → enter the new version number
+1. Ensure `ha-addon/NEXT_VERSION` contains the version to release
+2. Move `## [Unreleased]` entries in `CHANGELOG.md` to `## [x.y.z] - YYYY-MM-DD` and
+   update the comparison links at the bottom — merge this via PR to `main` first
+3. Go to **Actions → Release → Run workflow** → enter the version number
