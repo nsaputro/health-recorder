@@ -8,6 +8,9 @@
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 <title>Health Recorder</title>
+<!-- Chart.js — lightweight canvas charts (no build step) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+  crossorigin="anonymous"></script>
 <style>
 /* ── HA-matching design tokens ──────────────────────────────────────── */
 :root {
@@ -157,6 +160,28 @@ tr:hover td{background:var(--hover-bg)}
 
 /* ── Empty / loading ────────────────────────────────────────────────── */
 .empty,.loading{text-align:center;padding:32px;color:var(--text-hint);font-size:13px}
+
+/* ── Time-range filter ──────────────────────────────────────────────── */
+.chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.chart-hdr .card-title{margin-bottom:0}
+.range-bar{display:flex;gap:4px}
+.range-btn{padding:3px 10px;border:1px solid var(--divider);border-radius:12px;
+  background:var(--surface);color:var(--text-secondary);cursor:pointer;font-size:11px;
+  font-family:inherit;font-weight:500;transition:all .15s;letter-spacing:.01em}
+.range-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.range-btn:hover:not(.active){border-color:var(--primary);color:var(--primary)}
+
+/* ── Trend summary stats ────────────────────────────────────────────── */
+.tstat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.tstat{background:var(--bg);border-radius:8px;padding:8px;text-align:center}
+.tval{font-size:15px;font-weight:600;color:var(--text-primary)}
+.tlbl{font-size:10px;color:var(--text-secondary);margin-top:1px;
+  text-transform:uppercase;letter-spacing:.03em}
+
+/* ── Chart canvas section ───────────────────────────────────────────── */
+.chart-section{margin-top:14px}
+.chart-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--text-secondary);font-weight:500;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -213,6 +238,21 @@ tr:hover td{background:var(--hover-bg)}
     </div>
   </div>
   <div class="card">
+    <div class="chart-hdr">
+      <div class="card-title">Weight Trend</div>
+      <div class="range-bar">
+        <button class="range-btn" data-months="1" onclick="setRange(1)">1M</button>
+        <button class="range-btn active" data-months="3" onclick="setRange(3)">3M</button>
+        <button class="range-btn" data-months="6" onclick="setRange(6)">6M</button>
+        <button class="range-btn" data-months="12" onclick="setRange(12)">1Y</button>
+        <button class="range-btn" data-months="0" onclick="setRange(0)">All</button>
+      </div>
+    </div>
+    <canvas id="weightChart" style="display:none"></canvas>
+    <div id="weightChartEmpty" class="empty" style="display:none;padding:16px">Add 2+ entries to see trend.</div>
+    <div class="tstat-row" id="weightStats"></div>
+  </div>
+  <div class="card">
     <div class="card-title">Weight History</div>
     <div id="weightTbl" class="loading">Loading…</div>
   </div>
@@ -244,6 +284,24 @@ tr:hover td{background:var(--hover-bg)}
       </form>
       <div id="lrAlert"></div>
     </div>
+  </div>
+  <div class="card">
+    <div class="chart-hdr" style="flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin-bottom:0">Lab Trend</div>
+      <div class="range-bar">
+        <button class="range-btn" data-months="1" onclick="setRange(1)">1M</button>
+        <button class="range-btn active" data-months="3" onclick="setRange(3)">3M</button>
+        <button class="range-btn" data-months="6" onclick="setRange(6)">6M</button>
+        <button class="range-btn" data-months="12" onclick="setRange(12)">1Y</button>
+        <button class="range-btn" data-months="0" onclick="setRange(0)">All</button>
+      </div>
+    </div>
+    <div class="filter-row" style="margin-top:8px">
+      <select id="labChartType" onchange="onLabChartTypeChange()"><option value="">Select test type to chart…</option></select>
+    </div>
+    <canvas id="labChart" style="display:none;margin-top:8px"></canvas>
+    <div id="labChartEmpty" style="display:none"></div>
+    <div class="tstat-row" id="labStats"></div>
   </div>
   <div class="card">
     <div class="card-title">Lab Results</div>
@@ -284,6 +342,30 @@ tr:hover td{background:var(--hover-bg)}
     </div>
   </div>
   <div class="card">
+    <div class="chart-hdr">
+      <div class="card-title">Vitals Trend</div>
+      <div class="range-bar">
+        <button class="range-btn" data-months="1" onclick="setRange(1)">1M</button>
+        <button class="range-btn active" data-months="3" onclick="setRange(3)">3M</button>
+        <button class="range-btn" data-months="6" onclick="setRange(6)">6M</button>
+        <button class="range-btn" data-months="12" onclick="setRange(12)">1Y</button>
+        <button class="range-btn" data-months="0" onclick="setRange(0)">All</button>
+      </div>
+    </div>
+    <div class="chart-section">
+      <div class="chart-section-title">Blood Pressure</div>
+      <canvas id="bpChart" style="display:none"></canvas>
+      <div id="bpChartEmpty" class="empty" style="display:none;padding:12px">No BP data in selected range.</div>
+      <div class="tstat-row" id="bpStats"></div>
+    </div>
+    <div class="chart-section" style="margin-top:16px">
+      <div class="chart-section-title">Heart Rate</div>
+      <canvas id="hrChart" style="display:none"></canvas>
+      <div id="hrChartEmpty" class="empty" style="display:none;padding:12px">No heart rate data in selected range.</div>
+      <div class="tstat-row" id="hrStats"></div>
+    </div>
+  </div>
+  <div class="card">
     <div class="card-title">Vitals History</div>
     <div id="vitalTbl" class="loading">Loading…</div>
   </div>
@@ -321,6 +403,8 @@ const S = {
   labTypes: [], labTypeMap: {},
   google: null,
   activeTab: 'overview',
+  range: 3,        // active time-range in months (0 = all)
+  activeLab: '',   // test type selected for lab chart
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -428,6 +512,10 @@ function go(tab) {
   document.querySelectorAll('.panel').forEach(p=>{
     p.classList.toggle('active', p.id==='panel-'+tab);
   });
+  // Render charts after the panel becomes visible (canvas needs to be visible for sizing)
+  if      (tab==='weight') buildWeightChart(S.weights);
+  else if (tab==='vitals') { buildBpChart(S.vitals); buildHrChart(S.vitals); }
+  else if (tab==='labs')   buildLabChart(S.labs, S.activeLab);
 }
 
 function toggle(formId, arrowId) {
@@ -443,9 +531,9 @@ function toggle(formId, arrowId) {
 async function loadAll() {
   await Promise.allSettled([
     loadHAUser(),
-    load('weights', 'health/body-metrics?limit=60'),
-    load('vitals',  'health/vital-signs?limit=60'),
-    load('labs',    'health/lab-results?limit=200'),
+    load('weights', buildUrl('health/body-metrics', S.range)),
+    load('vitals',  buildUrl('health/vital-signs',  S.range)),
+    load('labs',    buildUrl('health/lab-results',  S.range)),
     loadLabTypes(),
     loadGoogle(),
   ]);
@@ -464,20 +552,29 @@ async function load(key, url) {
   try { S[key] = await req('GET', url); render(key); } catch(e) { console.warn(key, e); }
 }
 function render(key) {
-  if (key==='weights') renderWeights();
-  else if (key==='labs') renderLabs();
-  else if (key==='vitals') renderVitals();
+  if (key==='weights') {
+    renderWeights();
+    if (S.activeTab==='weight') buildWeightChart(S.weights);
+  } else if (key==='labs') {
+    renderLabs();
+    if (S.activeTab==='labs') buildLabChart(S.labs, S.activeLab);
+  } else if (key==='vitals') {
+    renderVitals();
+    if (S.activeTab==='vitals') { buildBpChart(S.vitals); buildHrChart(S.vitals); }
+  }
 }
 
 async function loadLabTypes() {
   try {
     S.labTypes = await req('GET', 'health/lab-types');
     S.labTypeMap = Object.fromEntries(S.labTypes.map(t=>[t.test_type, t]));
-    const sel  = document.getElementById('lr_type');
-    const filt = document.getElementById('labFilter');
+    const sel      = document.getElementById('lr_type');
+    const filt     = document.getElementById('labFilter');
+    const chartSel = document.getElementById('labChartType');
     S.labTypes.forEach(t => {
-      sel.innerHTML  += `<option value="${t.test_type}">${t.display_name}</option>`;
-      filt.innerHTML += `<option value="${t.test_type}">${t.display_name}</option>`;
+      sel.innerHTML       += `<option value="${t.test_type}">${t.display_name}</option>`;
+      filt.innerHTML      += `<option value="${t.test_type}">${t.display_name}</option>`;
+      chartSel.innerHTML  += `<option value="${t.test_type}">${t.display_name}</option>`;
     });
     if (S.labTypes[0]) onTypeChange();
   } catch(e) { console.warn('labTypes', e); }
@@ -662,7 +759,7 @@ document.getElementById('bmFrm').addEventListener('submit', async e => {
     showAlert('bmAlert','success','✓ Entry saved!');
     e.target.reset();
     document.getElementById('bm_at').value = now();
-    await load('weights','health/body-metrics?limit=60');
+    await load('weights', buildUrl('health/body-metrics', S.range));
     renderOverview();
   } catch(err) { showAlert('bmAlert','error','✗ '+err.message); }
   finally { btn.disabled=false; btn.textContent='Save Entry'; }
@@ -684,7 +781,7 @@ document.getElementById('lrFrm').addEventListener('submit', async e => {
     showAlert('lrAlert','success','✓ Result saved!');
     e.target.reset();
     document.getElementById('lr_at').value = now();
-    await load('labs','health/lab-results?limit=200');
+    await load('labs', buildUrl('health/lab-results', S.range));
     renderOverview();
   } catch(err) { showAlert('lrAlert','error','✗ '+err.message); }
   finally { btn.disabled=false; btn.textContent='Save Result'; }
@@ -705,7 +802,7 @@ document.getElementById('vsFrm').addEventListener('submit', async e => {
     showAlert('vsAlert','success','✓ Reading saved!');
     e.target.reset();
     document.getElementById('vs_at').value = now();
-    await load('vitals','health/vital-signs?limit=60');
+    await load('vitals', buildUrl('health/vital-signs', S.range));
     renderOverview();
   } catch(err) { showAlert('vsAlert','error','✗ '+err.message); }
   finally { btn.disabled=false; btn.textContent='Save Reading'; }
@@ -717,9 +814,9 @@ document.getElementById('vsFrm').addEventListener('submit', async e => {
 async function syncRec(type, id) {
   try {
     await req('POST',`sync/${type}/${id}`);
-    if      (type==='body-metrics') await load('weights','health/body-metrics?limit=60');
-    else if (type==='lab-results')  await load('labs',   'health/lab-results?limit=200');
-    else                            await load('vitals',  'health/vital-signs?limit=60');
+    if      (type==='body-metrics') await load('weights', buildUrl('health/body-metrics', S.range));
+    else if (type==='lab-results')  await load('labs',    buildUrl('health/lab-results',  S.range));
+    else                            await load('vitals',  buildUrl('health/vital-signs',  S.range));
   } catch(e) { alert('Sync failed: '+e.message); }
 }
 
@@ -750,6 +847,203 @@ async function disconnectGoogle() {
   if (!confirm('Disconnect Google account? Your local data will be kept.')) return;
   try { await req('DELETE','auth/google/disconnect'); S.google=null; renderGoogle(); }
   catch(e) { alert('Failed: '+e.message); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Chart helpers
+══════════════════════════════════════════════════════════════════ */
+const Charts = {};
+
+/** Build a URL with an optional ?since= param and limit=500. */
+function buildUrl(path, rangeMonths) {
+  let url = path + '?limit=500';
+  if (rangeMonths) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - rangeMonths);
+    url += '&since=' + d.toISOString();
+  }
+  return url;
+}
+
+/** Render a 4-cell trend summary (Latest / Avg / Min / Max). */
+function renderTStats(id, values, unit, decimals) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const v = (values||[]).filter(x => x != null && !isNaN(x));
+  if (!v.length) { el.innerHTML = ''; return; }
+  const dp = decimals != null ? decimals : 1;
+  const f  = n => (+n).toFixed(dp);
+  const avg = v.reduce((a,b)=>a+b,0)/v.length;
+  const latest = v[v.length-1];
+  el.innerHTML = [
+    {lbl:'Latest', val:f(latest)},
+    {lbl:'Avg',    val:f(avg)},
+    {lbl:'Min',    val:f(Math.min(...v))},
+    {lbl:'Max',    val:f(Math.max(...v))},
+  ].map(c=>`<div class="tstat"><div class="tval">${c.val}</div><div class="tlbl">${c.lbl} ${unit}</div></div>`).join('');
+}
+
+/** Sync all range-btn elements to the active range. */
+function syncRangeBtns(months) {
+  document.querySelectorAll('.range-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.months)===months);
+  });
+}
+
+/** Set time range and reload data for the active tab. */
+async function setRange(months) {
+  S.range = months;
+  syncRangeBtns(months);
+  const tab = S.activeTab;
+  if (tab==='weight') {
+    await load('weights', buildUrl('health/body-metrics', months));
+  } else if (tab==='vitals') {
+    await load('vitals', buildUrl('health/vital-signs', months));
+  } else if (tab==='labs') {
+    await load('labs', buildUrl('health/lab-results', months));
+  }
+}
+
+function buildWeightChart(data) {
+  const ctx = document.getElementById('weightChart');
+  const empty = document.getElementById('weightChartEmpty');
+  if (!ctx) return;
+  if (Charts.weight) { Charts.weight.destroy(); Charts.weight = null; }
+  const rows = [...(data||[])].filter(r=>r.weight_kg!=null).reverse();
+  if (rows.length < 2) {
+    ctx.style.display='none'; if (empty) empty.style.display='';
+    renderTStats('weightStats',[],'');
+    return;
+  }
+  ctx.style.display=''; if (empty) empty.style.display='none';
+  Charts.weight = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels:rows.map(r=>fmt(r.measured_at)),
+      datasets:[{
+        label:'Weight (kg)',
+        data:rows.map(r=>r.weight_kg),
+        borderColor:'#03a9f4',
+        backgroundColor:'rgba(3,169,244,.08)',
+        tension:0.3, pointRadius:3, fill:true,
+      }],
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{y:{title:{display:true,text:'kg',font:{size:11}}}},
+    },
+  });
+  renderTStats('weightStats', rows.map(r=>r.weight_kg), 'kg', 1);
+}
+
+function buildBpChart(data) {
+  const ctx  = document.getElementById('bpChart');
+  const empty = document.getElementById('bpChartEmpty');
+  if (!ctx) return;
+  if (Charts.bp) { Charts.bp.destroy(); Charts.bp = null; }
+  const rows = [...(data||[])].filter(r=>r.systolic_bp&&r.diastolic_bp).reverse();
+  if (rows.length < 2) {
+    ctx.style.display='none'; if (empty) empty.style.display='';
+    renderTStats('bpStats',[],'');
+    return;
+  }
+  ctx.style.display=''; if (empty) empty.style.display='none';
+  Charts.bp = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels:rows.map(r=>fmt(r.measured_at)),
+      datasets:[
+        {label:'Systolic',  data:rows.map(r=>r.systolic_bp),  borderColor:'#f44336',tension:0.3,pointRadius:3},
+        {label:'Diastolic', data:rows.map(r=>r.diastolic_bp), borderColor:'#ff9800',tension:0.3,pointRadius:3},
+      ],
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{font:{size:11}}}},
+      scales:{y:{min:40,max:180,title:{display:true,text:'mmHg',font:{size:11}}}},
+    },
+  });
+  renderTStats('bpStats', rows.map(r=>r.systolic_bp), 'sys mmHg', 0);
+}
+
+function buildHrChart(data) {
+  const ctx  = document.getElementById('hrChart');
+  const empty = document.getElementById('hrChartEmpty');
+  if (!ctx) return;
+  if (Charts.hr) { Charts.hr.destroy(); Charts.hr = null; }
+  const rows = [...(data||[])].filter(r=>r.heart_rate!=null).reverse();
+  if (rows.length < 2) {
+    ctx.style.display='none'; if (empty) empty.style.display='';
+    renderTStats('hrStats',[],'');
+    return;
+  }
+  ctx.style.display=''; if (empty) empty.style.display='none';
+  Charts.hr = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels:rows.map(r=>fmt(r.measured_at)),
+      datasets:[{
+        label:'Heart Rate',
+        data:rows.map(r=>r.heart_rate),
+        borderColor:'#e91e63',
+        backgroundColor:'rgba(233,30,99,.08)',
+        tension:0.3, pointRadius:3, fill:true,
+      }],
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{y:{title:{display:true,text:'bpm',font:{size:11}}}},
+    },
+  });
+  renderTStats('hrStats', rows.map(r=>r.heart_rate), 'bpm', 0);
+}
+
+function buildLabChart(data, testType) {
+  const ctx   = document.getElementById('labChart');
+  const empty = document.getElementById('labChartEmpty');
+  if (!ctx) return;
+  if (Charts.lab) { Charts.lab.destroy(); Charts.lab = null; }
+  if (!testType) {
+    ctx.style.display='none'; if (empty) empty.style.display='none';
+    renderTStats('labStats',[],'');
+    return;
+  }
+  const rows = [...(data||[])].filter(r=>r.test_type===testType).reverse();
+  if (rows.length < 2) {
+    ctx.style.display='none';
+    if (empty) { empty.style.display=''; empty.innerHTML='<div class="empty" style="padding:12px">Not enough data for this test type in the selected range.</div>'; }
+    renderTStats('labStats',[],'');
+    return;
+  }
+  ctx.style.display=''; if (empty) empty.style.display='none';
+  const t    = S.labTypeMap[testType];
+  const unit = t?.unit || rows[0]?.unit || '';
+  Charts.lab = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels:rows.map(r=>fmt(r.measured_at)),
+      datasets:[{
+        label: t?.display_name || testType,
+        data:rows.map(r=>r.value),
+        borderColor:'#6366f1',
+        backgroundColor:'rgba(99,102,241,.08)',
+        tension:0.3, pointRadius:4, fill:true,
+      }],
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{y:{title:{display:true,text:unit,font:{size:11}}}},
+    },
+  });
+  renderTStats('labStats', rows.map(r=>r.value), unit, 1);
+}
+
+function onLabChartTypeChange() {
+  S.activeLab = document.getElementById('labChartType').value;
+  buildLabChart(S.labs, S.activeLab);
 }
 
 /* ═══════════════════════════════════════════════════════════════════

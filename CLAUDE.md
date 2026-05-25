@@ -44,6 +44,22 @@ The next version must be higher than the latest release. Never reuse an already-
 
 Update `ha-addon/config.yaml` `version` field in the same PR as the change.
 
+### Pre-release version
+
+**Every feature PR must also bump `ha-addon-dev/config.yaml` `version`** to a pre-release
+that matches the main version, so the dev channel is ready for testing immediately.
+
+The format is `<main-version>b<N>` where N = (latest released pre-release for that version) + 1.
+
+Steps:
+1. Check what the main version will be (from `ha-addon/config.yaml` in your PR)
+2. Call `mcp__github__list_releases` and find the highest `bN` tag matching that version
+   (e.g. if main version is `0.3.0` look for `v0.3.0b*` tags)
+3. Set `ha-addon-dev/config.yaml` `version` to `<main-version>b<N+1>`
+   — if no matching pre-release exists yet, start at `b1`
+
+Example: main version `0.3.0`, latest release is `v0.3.0b2` → set dev version to `"0.3.0b3"`.
+
 ## Changelog
 
 **Every PR that changes addon behaviour must update `CHANGELOG.md`.**

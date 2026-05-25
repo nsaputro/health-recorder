@@ -4,6 +4,8 @@ import { format, parseISO } from 'date-fns'
 import { labResults as api } from '../api/client'
 import LabResultForm from '../components/forms/LabResultForm'
 import LabResultChart from '../components/charts/LabResultChart'
+import TrendSummary from '../components/charts/TrendSummary'
+import TimeRangeFilter, { sinceFromRange, type RangeLabel } from '../components/charts/TimeRangeFilter'
 import type { LabResultCreate, LabReferenceRange } from '../types/health'
 
 const LAB_COLORS: Record<string, string> = {
@@ -22,7 +24,6 @@ const LAB_COLORS: Record<string, string> = {
 function StatusBadge({ value, ref: r }: { value: number; ref?: LabReferenceRange }) {
   if (!r) return null
   if (r.test_type === 'cholesterol_hdl') {
-    // HDL: higher is better
     if (value >= (r.low ?? 0)) return <span className="badge-success">Good</span>
     return <span className="badge-danger">Low</span>
   }
@@ -35,10 +36,15 @@ export default function LabResultsPage() {
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [filterType, setFilterType] = useState('')
+  const [range, setRange] = useState<{ label: RangeLabel; months: number }>({ label: '3M', months: 3 })
 
   const { data: records = [], isLoading } = useQuery({
-    queryKey: ['lab-results', filterType],
-    queryFn: () => api.list({ test_type: filterType || undefined, limit: 200 }),
+    queryKey: ['lab-results', filterType, range.months],
+    queryFn: () => api.list({
+      test_type: filterType || undefined,
+      limit: 500,
+      since: sinceFromRange(range.months),
+    }),
   })
 
   const { data: labTypes = [] } = useQuery({
@@ -70,8 +76,13 @@ export default function LabResultsPage() {
 
   const typeMap = Object.fromEntries(labTypes.map((t: LabReferenceRange) => [t.test_type, t]))
 
-  // Filtered records for chart
-  const chartRecords = filterType ? records.filter((r) => r.test_type === filterType) : []
+  // Chart records — when a type is selected, records are already filtered server-side
+  const chartRecords = filterType ? records : []
+
+  // Sorted ascending for TrendSummary
+  const sortedAsc = [...chartRecords].sort(
+    (a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime()
+  )
 
   return (
     <div className="space-y-6">
@@ -89,9 +100,9 @@ export default function LabResultsPage() {
         </div>
       )}
 
-      {/* Filter + chart */}
+      {/* Filter + chart card */}
       <div className="card">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex flex-wrap items-center gap-4 mb-4">
           <h2 className="text-base font-semibold">Trend</h2>
           <select
             className="input max-w-xs"
@@ -103,15 +114,25 @@ export default function LabResultsPage() {
               <option key={t.test_type} value={t.test_type}>{t.display_name}</option>
             ))}
           </select>
+          <TimeRangeFilter
+            value={range.label}
+            onChange={(label, months) => setRange({ label, months })}
+          />
         </div>
         {filterType && chartRecords.length > 0 ? (
-          <LabResultChart
-            data={chartRecords}
-            referenceRange={typeMap[filterType]}
-            color={LAB_COLORS[filterType] ?? '#3b82f6'}
-          />
+          <>
+            <LabResultChart
+              data={chartRecords}
+              referenceRange={typeMap[filterType]}
+              color={LAB_COLORS[filterType] ?? '#3b82f6'}
+            />
+            <TrendSummary
+              values={sortedAsc.map((r) => r.value)}
+              unit={typeMap[filterType]?.unit ?? chartRecords[0]?.unit ?? ''}
+            />
+          </>
         ) : filterType ? (
-          <p className="text-gray-400 text-sm">No records for this test type.</p>
+          <p className="text-gray-400 text-sm">No records for this test type in the selected period.</p>
         ) : null}
       </div>
 

@@ -4,15 +4,18 @@ import { format, parseISO } from 'date-fns'
 import { bodyMetrics as api } from '../api/client'
 import BodyMetricForm from '../components/forms/BodyMetricForm'
 import WeightChart from '../components/charts/WeightChart'
+import TrendSummary from '../components/charts/TrendSummary'
+import TimeRangeFilter, { sinceFromRange, type RangeLabel } from '../components/charts/TimeRangeFilter'
 import type { BodyMetricCreate } from '../types/health'
 
 export default function BodyMetricsPage() {
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
+  const [range, setRange] = useState<{ label: RangeLabel; months: number }>({ label: '3M', months: 3 })
 
   const { data: records = [], isLoading } = useQuery({
-    queryKey: ['body-metrics'],
-    queryFn: () => api.list({ limit: 100 }),
+    queryKey: ['body-metrics', range.months],
+    queryFn: () => api.list({ limit: 500, since: sinceFromRange(range.months) }),
   })
 
   const createMutation = useMutation({
@@ -45,6 +48,13 @@ export default function BodyMetricsPage() {
     return <span className="badge-danger">Obese</span>
   }
 
+  // For TrendSummary: sort ascending for "latest = last element"
+  const sortedAsc = [...records].sort(
+    (a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime()
+  )
+  const weightValues = sortedAsc.map((r) => r.weight_kg)
+  const bmiValues    = sortedAsc.filter((r) => r.bmi != null).map((r) => r.bmi as number)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -64,12 +74,35 @@ export default function BodyMetricsPage() {
         </div>
       )}
 
-      {records.length > 1 && (
-        <div className="card">
-          <h2 className="text-base font-semibold mb-4">Trend</h2>
-          <WeightChart data={records} showBmi />
+      {/* Chart card */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold">Trend</h2>
+          <TimeRangeFilter
+            value={range.label}
+            onChange={(label, months) => setRange({ label, months })}
+          />
         </div>
-      )}
+        {records.length > 1 ? (
+          <>
+            <WeightChart data={records} showBmi />
+            <div className="mt-2 grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">Weight</p>
+                <TrendSummary values={weightValues} unit="kg" decimals={1} />
+              </div>
+              {bmiValues.length > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">BMI</p>
+                  <TrendSummary values={bmiValues} unit="" decimals={1} />
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <p className="text-gray-400 text-sm">Add 2+ entries to see the trend chart.</p>
+        )}
+      </div>
 
       <div className="card">
         <h2 className="text-base font-semibold mb-4">All Entries ({records.length})</h2>
