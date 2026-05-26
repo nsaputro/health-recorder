@@ -2,20 +2,16 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version to release (must match ha-addon/NEXT_VERSION, without 'v' prefix, e.g. 0.3.0)"
-        required: true
-        default: "0.1.0"
 
 permissions:
-  contents: write    # create GitHub release + push tag + commit config.yaml
-  packages: write    # push to ghcr.io
+  contents: write       # commit, tag, push
+  packages: write       # push to ghcr.io
+  pull-requests: write  # open post-release PR
 
 jobs:
-  # ── Guard: validate, write config.yaml, tag ──────────────────────────────────
+  # ── Validate & tag ────────────────────────────────────────────────────────────
   prepare-release:
-    name: Prepare release
+    name: Validate & tag
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.ver.outputs.version }}
@@ -25,41 +21,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate version against NEXT_VERSION
+      - name: Read and validate NEXT_VERSION
         id: ver
         run: |
-          VERSION="${{ inputs.version }}"
-          NEXT=$(cat ha-addon/NEXT_VERSION | tr -d '[:space:]')
+          VERSION=$(cat ha-addon/NEXT_VERSION | tr -d '[:space:]')
 
-          echo "Requested version : $VERSION"
-          echo "NEXT_VERSION file : $NEXT"
+          echo "NEXT_VERSION : $VERSION"
 
-          if [ "$VERSION" != "$NEXT" ]; then
-            echo "::error::Requested version ($VERSION) does not match ha-addon/NEXT_VERSION ($NEXT)."
-            echo "::error::Update ha-addon/NEXT_VERSION before releasing."
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::NEXT_VERSION ($VERSION) is not valid semver (X.Y.Z)."
+            exit 1
+          fi
+
+          if git tag | grep -qx "v${VERSION}"; then
+            echo "::error::Tag v${VERSION} already exists — already released."
             exit 1
           fi
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION"    >> "$GITHUB_OUTPUT"
 
-      - name: Write version into config.yaml and commit to main
+      - name: Create and push tag
         run: |
-          VERSION="${{ steps.ver.outputs.version }}"
-
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # Stamp the release version into config.yaml
-          sed -i "s/^version:.*/version: \"${VERSION}\"/" ha-addon/config.yaml
-
-          git add ha-addon/config.yaml
-          git commit -m "chore: release v${VERSION} — stamp config.yaml"
-          git push origin HEAD:main
-
-          # Tag the release commit and push
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}"
+          git tag "v${{ steps.ver.outputs.version }}"
+          git push origin "v${{ steps.ver.outputs.version }}"
 
   # ── Build & push one image per architecture ───────────────────────────────────
   build-and-push:
@@ -179,3 +166,137 @@ jobs:
           # Frontend: http://localhost:5173
           # Backend API: http://localhost:8000/docs
           \`\`\`"
+
+  # ── Post-release PR: stamp config.yaml, bump NEXT_VERSION, update CHANGELOG ───
+  create-post-release-pr:
+    name: Create post-release PR
+    runs-on: ubuntu-latest
+    needs: [prepare-release, github-release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Compute next patch version
+        id: next
+        run: |
+          VERSION="${{ needs.prepare-release.outputs.version }}"
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
+          NEXT="$MAJOR.$MINOR.$((PATCH + 1))"
+          echo "next_version=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "Next version will be: $NEXT"
+
+      - name: Create branch and update files
+        env:
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+          NEXT: ${{ steps.next.outputs.next_version }}
+          REPO: ${{ github.repository }}
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          BRANCH="chore/post-release-${VERSION}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+
+          # 1. Stamp ha-addon/config.yaml with the released version
+          sed -i "s/^version:.*/version: \"${VERSION}\"/" ha-addon/config.yaml
+
+          # 2. Bump NEXT_VERSION to next patch
+          echo "$NEXT" > ha-addon/NEXT_VERSION
+
+          # 3. Reset dev pre-release to NEXT b1
+          sed -i "s/^version:.*/version: \"${NEXT}b1\"/" ha-addon-dev/config.yaml
+
+          # 4. Update CHANGELOG.md and generate ha-addon/CHANGELOG.md
+          TODAY="$TODAY" python3 - <<'PYEOF'
+          import os, re, pathlib
+
+          version = os.environ["VERSION"]
+          next_ver = os.environ["NEXT"]
+          today    = os.environ["TODAY"]
+          repo     = os.environ["REPO"]
+
+          p = pathlib.Path("CHANGELOG.md")
+          text = p.read_text()
+
+          # Find the previous version from the current [Unreleased] comparison link
+          m_prev = re.search(r"\[Unreleased\]:.*compare/(v[\d.]+)\.\.\.HEAD", text)
+          prev_tag = m_prev.group(1) if m_prev else "v0.0.0"
+
+          # Date the version section (replace "- unreleased" with "- YYYY-MM-DD")
+          text = re.sub(
+              rf"(## \[{re.escape(version)}\]) - unreleased",
+              rf"\1 - {today}",
+              text,
+              flags=re.IGNORECASE,
+          )
+
+          # Update [Unreleased] comparison link to point from new tag to HEAD
+          text = re.sub(
+              r"\[Unreleased\]:.*",
+              f"[Unreleased]: https://github.com/{repo}/compare/v{version}...HEAD",
+              text,
+          )
+
+          # Add [VERSION] link after [Unreleased] if not already present
+          if f"[{version}]:" not in text:
+              text = re.sub(
+                  r"(\[Unreleased\]:.*\n)",
+                  rf"\1[{version}]: https://github.com/{repo}/compare/{prev_tag}...v{version}\n",
+                  text,
+              )
+
+          p.write_text(text)
+
+          # Generate ha-addon/CHANGELOG.md — entries for this version only
+          m = re.search(
+              rf"(## \[{re.escape(version)}\].*?\n)(.*?)(?=\n## \[|\Z)",
+              text,
+              re.DOTALL,
+          )
+          body = m.group(0).strip() if m else f"## [{version}]\n\nSee full changelog."
+          addon_text = (
+              f"# Changelog\n\n"
+              f"{body}\n\n"
+              f"[{version}]: https://github.com/{repo}/releases/tag/v{version}\n"
+          )
+          pathlib.Path("ha-addon/CHANGELOG.md").write_text(addon_text)
+
+          print(f"Updated CHANGELOG.md and generated ha-addon/CHANGELOG.md for {version}")
+          PYEOF
+
+          git add ha-addon/config.yaml ha-addon/NEXT_VERSION ha-addon-dev/config.yaml \
+                  CHANGELOG.md ha-addon/CHANGELOG.md
+          git commit -m "chore: post-release ${VERSION} — stamp versions and update changelog"
+          git push --force origin "$BRANCH"
+
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+          NEXT: ${{ steps.next.outputs.next_version }}
+        run: |
+          # Skip if a PR for this branch already exists (re-run safety)
+          EXISTING=$(gh pr list --head "chore/post-release-${VERSION}" --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            echo "PR #${EXISTING} already exists for chore/post-release-${VERSION} — skipping creation."
+            exit 0
+          fi
+          gh pr create \
+            --base main \
+            --head "chore/post-release-${VERSION}" \
+            --title "chore: post-release ${VERSION} — bump to ${NEXT}" \
+            --body "Automated post-release housekeeping after **v${VERSION}** was published.
+
+          **Changes in this PR:**
+          - \`ha-addon/config.yaml\` version → \`${VERSION}\` (stamps the released version so HA offers the update)
+          - \`ha-addon/NEXT_VERSION\` → \`${NEXT}\` (next patch target)
+          - \`ha-addon-dev/config.yaml\` version → \`${NEXT}b1\`
+          - \`CHANGELOG.md\` — \`[${VERSION}]\` section dated; comparison links updated
+          - \`ha-addon/CHANGELOG.md\` — regenerated from main changelog
+
+          Please review \`ha-addon/CHANGELOG.md\` for accuracy before merging."
