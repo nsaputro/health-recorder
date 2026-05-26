@@ -272,7 +272,7 @@ jobs:
           git add ha-addon/config.yaml ha-addon/NEXT_VERSION ha-addon-dev/config.yaml \
                   CHANGELOG.md ha-addon/CHANGELOG.md
           git commit -m "chore: post-release ${VERSION} — stamp versions and update changelog"
-          git push origin "$BRANCH"
+          git push --force origin "$BRANCH"
 
       - name: Open pull request
         env:
@@ -280,6 +280,12 @@ jobs:
           VERSION: ${{ needs.prepare-release.outputs.version }}
           NEXT: ${{ steps.next.outputs.next_version }}
         run: |
+          # Skip if a PR for this branch already exists (re-run safety)
+          EXISTING=$(gh pr list --head "chore/post-release-${VERSION}" --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            echo "PR #${EXISTING} already exists for chore/post-release-${VERSION} — skipping creation."
+            exit 0
+          fi
           gh pr create \
             --base main \
             --head "chore/post-release-${VERSION}" \
