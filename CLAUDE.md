@@ -200,12 +200,18 @@ All supported test types, their display names, default units, and clinical refer
 **Release** (`.github/workflows/release.yml`) is triggered via `workflow_dispatch` only
 (enter the version in the GitHub Actions UI). The workflow:
 1. Validates the input version matches `ha-addon/NEXT_VERSION`
-2. Writes the version into `ha-addon/config.yaml`, commits to `main`, and creates the tag
+2. Creates and pushes the git tag (`config.yaml` is **not** touched here)
 3. Builds and pushes Docker images to `ghcr.io/nsaputro/health-recorder/{arch}-health_recorder`
 4. Creates a GitHub release with install instructions
+5. Opens an auto-generated `chore/post-release-X.Y.Z` PR that:
+   - Stamps `ha-addon/config.yaml` with the released version (so HA offers the update)
+   - Bumps `ha-addon/NEXT_VERSION` to the next patch version
+   - Resets `ha-addon-dev/config.yaml` to `{NEXT}b1`
+   - Dates the `## [X.Y.Z]` section in `CHANGELOG.md` and updates comparison links
+   - Regenerates `ha-addon/CHANGELOG.md` from the main changelog
 
 **To release a new version:**
-1. Ensure `ha-addon/NEXT_VERSION` contains the version to release
-2. Move `## [Unreleased]` entries in `CHANGELOG.md` to `## [x.y.z] - YYYY-MM-DD` and
-   update the comparison links at the bottom — merge this via PR to `main` first
-3. Go to **Actions → Release → Run workflow** → enter the version number
+1. Ensure `ha-addon/NEXT_VERSION` contains the version to release and all changes are merged to `main`
+2. Go to **Actions → Release → Run workflow** (no inputs needed — version is read from `NEXT_VERSION`)
+3. Review and merge the auto-created `chore/post-release-X.Y.Z` PR
+   (check `ha-addon/CHANGELOG.md` looks good before merging)
