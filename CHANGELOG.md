@@ -8,6 +8,11 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+### Changed
+- Sync-related UI (status bar indicator, Sync column, per-row Sync button) is now hidden in
+  all data tables when Google sync is not configured or connected. The columns and buttons
+  reappear automatically once a Google account is linked from Settings.
+
 ## [0.3.0] - unreleased
 
 ### Added
