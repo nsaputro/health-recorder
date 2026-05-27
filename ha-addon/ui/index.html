@@ -188,9 +188,11 @@ tr:hover td{background:var(--hover-bg)}
 
 <!-- Status bar: Google sync (left) + HA user (right) -->
 <div class="status-bar">
-  <span class="dot off" id="gDot"></span>
-  <span>Google Sync:</span>
-  <span id="gLabel">Not connected</span>
+  <span id="gSyncBar" style="display:none;align-items:center;gap:8px">
+    <span class="dot off" id="gDot"></span>
+    <span>Google Sync:</span>
+    <span id="gLabel">Not connected</span>
+  </span>
   <span class="status-bar-sep"></span>
   <span class="status-bar-user">
     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
@@ -633,15 +635,16 @@ function renderOverview() {
 function renderWeights() {
   const el = document.getElementById('weightTbl');
   if (!S.weights.length) { el.innerHTML='<div class="empty">No entries yet.</div>'; return; }
+  const ss = !!S.google;
   el.innerHTML = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Date/Time</th><th>Weight</th><th>BMI</th><th>Sync</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Date/Time</th><th>Weight</th><th>BMI</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
     <tbody>${S.weights.map(r=>`<tr>
       <td>${fmtDT(r.measured_at)}</td>
       <td><strong>${r.weight_kg} kg</strong></td>
       <td>${r.bmi ? r.bmi+' '+bmiBadge(r.bmi) : '—'}</td>
-      <td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>
+      ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
-        <button onclick="syncRec('body-metrics',${r.id})">Sync</button>
+        ${ss?`<button onclick="syncRec('body-metrics',${r.id})">Sync</button>`:''}
         <button class="del" onclick="delRec('body-metrics',${r.id})">Delete</button>
       </div></td>
     </tr>`).join('')}</tbody>
@@ -656,17 +659,18 @@ function renderLabs() {
   const rows = f ? S.labs.filter(r=>r.test_type===f) : S.labs;
   const el = document.getElementById('labTbl');
   if (!rows.length) { el.innerHTML='<div class="empty">No results yet.</div>'; return; }
+  const ss = !!S.google;
   el.innerHTML = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Date</th><th>Test</th><th>Result</th><th>Status</th><th>Lab</th><th>Sync</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Date</th><th>Test</th><th>Result</th><th>Status</th><th>Lab</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
     <tbody>${rows.map(r=>`<tr>
       <td>${fmt(r.measured_at)}</td>
       <td>${S.labTypeMap[r.test_type]?.display_name??r.test_type}</td>
       <td><strong>${r.value} ${r.unit}</strong></td>
       <td>${labBadge(r.test_type,r.value)}</td>
       <td style="color:var(--gray-500)">${r.lab_name??'—'}</td>
-      <td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>
+      ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
-        <button onclick="syncRec('lab-results',${r.id})">Sync</button>
+        ${ss?`<button onclick="syncRec('lab-results',${r.id})">Sync</button>`:''}
         <button class="del" onclick="delRec('lab-results',${r.id})">Delete</button>
       </div></td>
     </tr>`).join('')}</tbody>
@@ -679,16 +683,17 @@ function renderLabs() {
 function renderVitals() {
   const el = document.getElementById('vitalTbl');
   if (!S.vitals.length) { el.innerHTML='<div class="empty">No readings yet.</div>'; return; }
+  const ss = !!S.google;
   el.innerHTML = `<div class="tbl-wrap"><table>
-    <thead><tr><th>Date/Time</th><th>Blood Pressure</th><th>Status</th><th>Heart Rate</th><th>Sync</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Date/Time</th><th>Blood Pressure</th><th>Status</th><th>Heart Rate</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
     <tbody>${S.vitals.map(r=>`<tr>
       <td>${fmtDT(r.measured_at)}</td>
       <td>${r.systolic_bp&&r.diastolic_bp ? '<strong>'+r.systolic_bp+'/'+r.diastolic_bp+'</strong> mmHg' : '—'}</td>
       <td>${bpBadge(r.systolic_bp,r.diastolic_bp)}</td>
       <td>${r.heart_rate ? r.heart_rate+' bpm' : '—'}</td>
-      <td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>
+      ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
-        <button onclick="syncRec('vital-signs',${r.id})">Sync</button>
+        ${ss?`<button onclick="syncRec('vital-signs',${r.id})">Sync</button>`:''}
         <button class="del" onclick="delRec('vital-signs',${r.id})">Delete</button>
       </div></td>
     </tr>`).join('')}</tbody>
@@ -703,6 +708,10 @@ function renderGoogle() {
   const label = document.getElementById('gLabel');
   const sec   = document.getElementById('gSection');
   const g = S.google;
+
+  const bar = document.getElementById('gSyncBar');
+  bar.style.display = g ? 'flex' : 'none';
+  renderWeights(); renderLabs(); renderVitals();
 
   if (g) {
     dot.className = 'dot on';
