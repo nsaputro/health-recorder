@@ -130,7 +130,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/nsaputro/health-recorder/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/nsaputro/health-recorder/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nsaputro/health-recorder/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/nsaputro/health-recorder/compare/v0.1.4...v0.2.0
