@@ -268,27 +268,26 @@ status (success|error), records_synced, error_message, created_at
 - ✅ **Time-range filter**: 1 month / 3 months / 6 months / 1 year / all time; backed by `?since=` API param
 - ✅ **Trend summary**: Latest / Avg / Min / Max shown below each chart for the selected period
 
-### Phase 4 — Frontend Modernisation (v0.4.0) ⬜
+### Phase 4 — Frontend Modernisation (v0.4.0) ✅
 
 Upgrade the standalone `frontend/` to the latest major versions. The HA addon's vanilla-JS UI
 is unaffected (no build step to break).
 
-| Package | Current | Target | Breaking changes |
-|---|---|---|---|
-| React | 18.3 | **19** | New JSX transform (already used); `useTransition` signature change; stricter `ref` handling |
-| React Router | 6.x | **7.x** | `<Routes>`/`<Route>` API largely compatible; loader/action patterns encouraged |
-| TailwindCSS | 3.4 | **4.x** | `@tailwind` directives removed; new CSS-first config (`@import "tailwindcss"`); `tailwind.config.js` replaced by CSS variables |
-| TypeScript | 5.7 | **5.x latest** | No breaking changes expected |
-| Vite | 6.x | **6.x latest** | Already on v6 — keep up with patch releases |
+| Package | Before | After |
+|---|---|---|
+| React | 18.3 | **19.2** |
+| React Router | 6.28 | **7.15** |
+| TailwindCSS | 3.4 | **4.3** |
+| TypeScript | 5.7 | **6.0** |
+| Vite | 6.0 | **8.0** |
 
 Migration steps (in order):
-- ⬜ Upgrade TypeScript to latest 5.x; fix any new strict-mode errors
-- ⬜ Upgrade Vite to latest 6.x patch
-- ⬜ Migrate TailwindCSS 3 → 4: replace `tailwind.config.js` with CSS-first config, update `@tailwind` directives to `@import`, audit class name changes (`ring-*`, `shadow-*`, `divide-*`)
-- ⬜ Upgrade React 18 → 19 and React DOM: update `ReactDOM.createRoot` calls, fix `ref` forwarding patterns, address any removed legacy APIs
-- ⬜ Upgrade React Router 6 → 7: migrate `useNavigate` / `<Link>` / `<Outlet>` (mostly compatible); optionally adopt route loader pattern
-- ⬜ Update all `@types/*` packages to match new versions
-- ⬜ Run full test suite and `npm run build` to verify no regressions
+- ✅ Upgrade TypeScript (6.0) and Vite (8.0); add `types: ["vite/client"]` to tsconfig.json
+- ✅ Migrate TailwindCSS 3 → 4: `@import "tailwindcss"` + `@theme` block; `@tailwindcss/vite` plugin replaces PostCSS; deleted `tailwind.config.js` and `postcss.config.js`
+- ✅ Upgrade React 18 → 19: `ref` prop collision fixed in `StatusBadge` (renamed to `range`); unused vars cleaned up
+- ✅ Upgrade React Router 6 → 7: library-mode API unchanged; no code edits needed
+- ✅ Update all `@types/*` packages; ESLint 9 flat config (`eslint.config.js`) created
+- ✅ `npm run build` passes (zero TS errors); `npm run lint` passes (zero errors)
 
 ---
 

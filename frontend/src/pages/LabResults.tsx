@@ -21,7 +21,7 @@ const LAB_COLORS: Record<string, string> = {
   hemoglobin:        '#ec4899',
 }
 
-function StatusBadge({ value, ref: r }: { value: number; ref?: LabReferenceRange }) {
+function StatusBadge({ value, range: r }: { value: number; range?: LabReferenceRange }) {
   if (!r) return null
   if (r.test_type === 'cholesterol_hdl') {
     if (value >= (r.low ?? 0)) return <span className="badge-success">Good</span>
@@ -171,7 +171,7 @@ export default function LabResultsPage() {
                     <td className="py-2 pr-4 font-medium">{typeMap[r.test_type]?.display_name ?? r.test_type}</td>
                     <td className="py-2 pr-4 font-semibold">{r.value} {r.unit}</td>
                     <td className="py-2 pr-4">
-                      <StatusBadge value={r.value} ref={typeMap[r.test_type]} />
+                      <StatusBadge value={r.value} range={typeMap[r.test_type]} />
                     </td>
                     <td className="py-2 pr-4 text-gray-500 text-xs">{r.lab_name ?? '—'}</td>
                     <td className="py-2 pr-4">
