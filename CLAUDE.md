@@ -91,7 +91,8 @@ Example: `NEXT_VERSION=0.3.0`, latest release is `v0.3.0b2` → set dev version 
 
 - Add an entry under `## [Unreleased]` in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
 - Use the categories `Added`, `Changed`, `Fixed`, `Removed` as appropriate
-- When a release is cut, move `[Unreleased]` entries to a new `## [x.y.z] - YYYY-MM-DD` heading and update the comparison links at the bottom
+- The release workflow automatically moves `[Unreleased]` entries to a new `## [x.y.z] - YYYY-MM-DD`
+  section and regenerates `ha-addon/CHANGELOG.md` — no manual migration needed
 
 ## Development Commands
 
