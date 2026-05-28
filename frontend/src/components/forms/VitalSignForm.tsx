@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function VitalSignForm({ onSubmit, defaultValues, loading }: Props) {
-  const { register, handleSubmit, formState: { errors } } = useForm<VitalSignCreate>({
+  const { register, handleSubmit } = useForm<VitalSignCreate>({
     defaultValues: {
       measured_at: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       ...defaultValues,

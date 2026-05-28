@@ -8,7 +8,7 @@ export default function SettingsPage() {
   const justConnected = searchParams.get('google_connected') === '1'
   const googleError   = searchParams.get('google_error')
 
-  const { data: cred, isLoading, isError } = useQuery({
+  const { data: cred, isLoading } = useQuery({
     queryKey: ['google-status'],
     queryFn: googleAuth.status,
     retry: false,

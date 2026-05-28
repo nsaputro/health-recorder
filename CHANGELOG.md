@@ -8,6 +8,10 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+### Changed
+- Standalone frontend upgraded to React 19, React Router 7, TailwindCSS 4, TypeScript 6,
+  and Vite 8. HA addon vanilla-JS UI is unaffected.
+
 ## [0.3.2] - 2026-05-27
 
 ### Changed
