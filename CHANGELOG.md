@@ -8,6 +8,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-05-28
+
 ### Changed
 - Standalone frontend upgraded to React 19, React Router 7, TailwindCSS 4, TypeScript 6,
   and Vite 8. HA addon vanilla-JS UI is unaffected.
@@ -136,7 +138,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/nsaputro/health-recorder/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/nsaputro/health-recorder/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/nsaputro/health-recorder/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/nsaputro/health-recorder/compare/v0.2.0...v0.3.0
