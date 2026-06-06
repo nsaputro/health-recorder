@@ -7,6 +7,7 @@ const navItems = [
   { to: '/body-metrics', label: 'Weight' },
   { to: '/lab-results',  label: 'Lab Results' },
   { to: '/vital-signs',  label: 'Vitals' },
+  { to: '/ranges',       label: 'Ranges' },
   { to: '/settings',     label: 'Settings' },
 ]
 

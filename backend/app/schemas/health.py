@@ -71,19 +71,41 @@ LAB_TEST_DISPLAY: dict[str, str] = {
     "other":             "Other",
 }
 
-# Reference ranges (normal values)
+# Reference ranges (normal values).  Keys "male" / "female" are gender overrides.
 LAB_REFERENCE_RANGES: dict[str, dict] = {
-    "cholesterol_total": {"low": 0,   "normal_max": 200, "borderline_max": 239, "unit": "mg/dL"},
-    "cholesterol_ldl":   {"low": 0,   "normal_max": 100, "borderline_max": 129, "unit": "mg/dL"},
-    "cholesterol_hdl":   {"low": 40,  "normal_max": 999, "borderline_max": 999, "unit": "mg/dL"},
-    "triglycerides":     {"low": 0,   "normal_max": 150, "borderline_max": 199, "unit": "mg/dL"},
-    "glucose_fasting":   {"low": 70,  "normal_max": 99,  "borderline_max": 125, "unit": "mg/dL"},
-    "glucose_random":    {"low": 70,  "normal_max": 140, "borderline_max": 199, "unit": "mg/dL"},
-    "glucose_hba1c":     {"low": 0,   "normal_max": 5.7, "borderline_max": 6.4, "unit": "%"},
-    "uric_acid":         {"low": 2.4, "normal_max": 6.0, "borderline_max": 7.0, "unit": "mg/dL"},
-    "creatinine":        {"low": 0.6, "normal_max": 1.2, "borderline_max": 1.5, "unit": "mg/dL"},
-    "hemoglobin":        {"low": 12,  "normal_max": 17.5,"borderline_max": 999, "unit": "g/dL"},
+    "cholesterol_total": {"low": 0,   "normal_max": 200,  "borderline_max": 239},
+    "cholesterol_ldl":   {"low": 0,   "normal_max": 100,  "borderline_max": 129},
+    "cholesterol_hdl":   {
+        "low": 40, "normal_max": 999, "borderline_max": 999, "higher_better": True,
+        "female": {"low": 50},
+    },
+    "triglycerides":     {"low": 0,   "normal_max": 150,  "borderline_max": 199},
+    "glucose_fasting":   {"low": 70,  "normal_max": 99,   "borderline_max": 125},
+    "glucose_random":    {"low": 70,  "normal_max": 140,  "borderline_max": 199},
+    "glucose_hba1c":     {"low": 0,   "normal_max": 5.7,  "borderline_max": 6.4},
+    "uric_acid":         {
+        "low": 2.4, "normal_max": 7.0, "borderline_max": 8.0,
+        "male":   {"low": 3.4, "normal_max": 7.0, "borderline_max": 8.0},
+        "female": {"low": 2.4, "normal_max": 6.0, "borderline_max": 7.0},
+    },
+    "creatinine":        {
+        "low": 0.6, "normal_max": 1.35, "borderline_max": 1.5,
+        "male":   {"low": 0.74, "normal_max": 1.35, "borderline_max": 1.5},
+        "female": {"low": 0.59, "normal_max": 1.04, "borderline_max": 1.3},
+    },
+    "hemoglobin":        {
+        "low": 12,  "normal_max": 17.5, "borderline_max": 999,
+        "male":   {"low": 13.5, "normal_max": 17.5},
+        "female": {"low": 12.0, "normal_max": 15.5},
+    },
 }
+
+
+def _resolve_range(base: dict, gender: Optional[str]) -> dict:
+    """Merge gender-specific overrides into the base range dict."""
+    if gender in ("male", "female") and gender in base:
+        return {**base, **base[gender]}
+    return base
 
 
 class LabResultCreate(BaseModel):
@@ -184,3 +206,14 @@ class LabReferenceRange(BaseModel):
     low: Optional[float] = None
     normal_max: Optional[float] = None
     borderline_max: Optional[float] = None
+    higher_better: bool = False
+
+
+# ── User Preferences ─────────────────────────────────────────────────────────
+
+class UserPreferenceRead(BaseModel):
+    gender: str  # "male" | "female" | "unset"
+
+
+class UserPreferenceUpdate(BaseModel):
+    gender: str  # validated in endpoint: must be male, female, or unset

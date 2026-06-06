@@ -66,6 +66,11 @@ export interface LabReferenceRange {
   low: number | null
   normal_max: number | null
   borderline_max: number | null
+  higher_better: boolean
+}
+
+export interface UserPreference {
+  gender: 'male' | 'female' | 'unset'
 }
 
 export interface GoogleCredential {

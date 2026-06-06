@@ -93,3 +93,12 @@ class SyncLog(Base):
     status = Column(String(16), nullable=False)      # "success" | "error"
     message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserPreferences(Base):
+    __tablename__ = "user_preferences"
+
+    id = Column(Integer, primary_key=True)
+    gender = Column(String(16), nullable=False, server_default="unset")  # "male"|"female"|"unset"
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

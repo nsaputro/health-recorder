@@ -1,8 +1,8 @@
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
 import { useQuery } from '@tanstack/react-query'
-import { labResults as labApi } from '../../api/client'
-import type { LabResultCreate } from '../../types/health'
+import { labResults as labApi, userPrefs } from '../../api/client'
+import type { LabResultCreate, LabReferenceRange } from '../../types/health'
 
 interface Props {
   onSubmit: (data: LabResultCreate) => Promise<void>
@@ -10,10 +10,21 @@ interface Props {
   loading?: boolean
 }
 
+function hintText(r: LabReferenceRange): string {
+  if (r.higher_better) return `Good: ≥ ${r.low} ${r.unit}`
+  const lo = r.low != null ? `${r.low}–` : ''
+  const hi = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : ''
+  const bor = r.borderline_max != null && r.borderline_max < 900 ? ` · Border: ≤ ${r.borderline_max}` : ''
+  return `Normal: ${lo}${hi} ${r.unit}${bor}`
+}
+
 export default function LabResultForm({ onSubmit, defaultValues, loading }: Props) {
+  const { data: prefs } = useQuery({ queryKey: ['user-prefs'], queryFn: userPrefs.get, retry: false })
+  const gender = prefs?.gender !== 'unset' ? prefs?.gender : undefined
+
   const { data: labTypes = [] } = useQuery({
-    queryKey: ['lab-types'],
-    queryFn: labApi.types,
+    queryKey: ['lab-types', gender],
+    queryFn: () => labApi.types(gender),
   })
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<LabResultCreate>({
@@ -62,10 +73,8 @@ export default function LabResultForm({ onSubmit, defaultValues, loading }: Prop
             {...register('value', { required: 'Required', valueAsNumber: true })}
           />
           {errors.value && <p className="text-red-500 text-xs mt-1">{errors.value.message}</p>}
-          {typeInfo && (typeInfo.normal_max || typeInfo.low) && (
-            <p className="text-xs text-gray-400 mt-1">
-              Normal: {typeInfo.low != null ? `${typeInfo.low}–` : '< '}{typeInfo.normal_max} {typeInfo.unit}
-            </p>
+          {typeInfo && (
+            <p className="text-xs text-gray-400 mt-1">{hintText(typeInfo)}</p>
           )}
         </div>
         <div>

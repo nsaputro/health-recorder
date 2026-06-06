@@ -6,6 +6,7 @@ import type {
   LabReferenceRange,
   GoogleCredential,
   SyncResult,
+  UserPreference,
 } from '../types/health'
 
 const http = axios.create({
@@ -35,8 +36,8 @@ export const labResults = {
     http.put<LabResult>(`/health/lab-results/${id}`, data).then((r) => r.data),
   delete: (id: number) => http.delete(`/health/lab-results/${id}`),
   sync: (id: number) => http.post(`/sync/lab-results/${id}`).then((r) => r.data),
-  types: () =>
-    http.get<LabReferenceRange[]>('/health/lab-types').then((r) => r.data),
+  types: (gender?: string) =>
+    http.get<LabReferenceRange[]>('/health/lab-types', { params: gender ? { gender } : {} }).then((r) => r.data),
 }
 
 // ── Vital Signs ────────────────────────────────────────────────────────────────
@@ -56,6 +57,12 @@ export const googleAuth = {
   status: () => http.get<GoogleCredential>('/auth/google/status').then((r) => r.data),
   disconnect: () => http.delete('/auth/google/disconnect').then((r) => r.data),
   loginUrl: () => `${http.defaults.baseURL}/auth/google/login`,
+}
+
+// ── User Preferences ──────────────────────────────────────────────────────────
+export const userPrefs = {
+  get:    () => http.get<UserPreference>('/auth/preferences').then((r) => r.data),
+  update: (data: UserPreference) => http.put<UserPreference>('/auth/preferences', data).then((r) => r.data),
 }
 
 // ── Sync All ───────────────────────────────────────────────────────────────────

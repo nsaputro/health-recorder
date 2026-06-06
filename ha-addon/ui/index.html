@@ -182,6 +182,17 @@ tr:hover td{background:var(--hover-bg)}
 .chart-section{margin-top:14px}
 .chart-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.05em;
   color:var(--text-secondary);font-weight:500;margin-bottom:6px}
+
+/* ── Ref range sub-line in lab table ────────────────────────────────── */
+.ref-range{font-size:11px;color:var(--text-hint);margin-top:2px}
+
+/* ── Gender picker ──────────────────────────────────────────────────── */
+.fg-label{font-size:12px;font-weight:500;color:var(--text-secondary);letter-spacing:.01em;margin-bottom:4px;display:block}
+.gender-pick{display:flex;gap:6px;flex-wrap:wrap}
+.gpick-btn{padding:5px 14px;border:1px solid var(--divider);border-radius:4px;font-size:13px;font-family:inherit;cursor:pointer;background:var(--surface);color:var(--text-secondary);transition:all .15s}
+.gpick-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.gpick-btn:hover:not(.active){border-color:var(--primary);color:var(--primary)}
+.save-msg{font-size:11px;color:var(--success);margin-left:4px}
 </style>
 </head>
 <body>
@@ -206,6 +217,7 @@ tr:hover td{background:var(--hover-bg)}
   <button class="tab"        onclick="go('weight')">Weight</button>
   <button class="tab"        onclick="go('labs')">Lab Results</button>
   <button class="tab"        onclick="go('vitals')">Vital Signs</button>
+  <button class="tab"        onclick="go('ranges')">Ranges</button>
   <button class="tab"        onclick="go('settings')">Settings</button>
 </nav>
 
@@ -373,8 +385,33 @@ tr:hover td{background:var(--hover-bg)}
   </div>
 </section>
 
+<!-- ═══ RANGES ════════════════════════════════════════════════════════════ -->
+<section id="panel-ranges" class="panel">
+  <div class="card">
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">Lab Reference Ranges</div>
+      <span id="rangesGenderNote" style="font-size:12px;color:var(--text-secondary)"></span>
+    </div>
+    <div class="tbl-wrap">
+      <table id="rangesTbl"></table>
+    </div>
+  </div>
+</section>
+
 <!-- ═══ SETTINGS ═══════════════════════════════════════════════════════════ -->
 <section id="panel-settings" class="panel">
+  <div class="card">
+    <div class="card-title">Profile</div>
+    <div class="fg">
+      <span class="fg-label">Biological Sex <em>(used for lab reference ranges)</em></span>
+      <div id="genderPicker" class="gender-pick">
+        <button class="gpick-btn active" data-g="unset" onclick="setGender('unset')">Not set</button>
+        <button class="gpick-btn" data-g="male" onclick="setGender('male')">Male</button>
+        <button class="gpick-btn" data-g="female" onclick="setGender('female')">Female</button>
+      </div>
+      <span id="genderSaved" class="save-msg"></span>
+    </div>
+  </div>
   <div class="card">
     <div class="card-title">Google Integration</div>
     <div id="gSection"></div>
@@ -404,6 +441,7 @@ const S = {
   weights: [], labs: [], vitals: [],
   labTypes: [], labTypeMap: {},
   google: null,
+  prefs: { gender: 'unset' },
   activeTab: 'overview',
   range: 3,        // active time-range in months (0 = all)
   activeLab: '',   // test type selected for lab chart
@@ -426,21 +464,6 @@ const UNIT_OPTIONS = {
   other:             ['mg/dL', 'mmol/L', 'g/dL', 'g/L', '%', 'units'],
 };
 
-/* ═══════════════════════════════════════════════════════════════════
-   Reference ranges
-══════════════════════════════════════════════════════════════════ */
-const REF = {
-  cholesterol_total: { hi_normal:200, hi_border:239 },
-  cholesterol_ldl:   { hi_normal:100, hi_border:129 },
-  cholesterol_hdl:   { lo_good:40, higher_better:true },
-  triglycerides:     { hi_normal:150, hi_border:199 },
-  glucose_fasting:   { lo_normal:70, hi_normal:99,  hi_border:125 },
-  glucose_random:    { hi_normal:140, hi_border:199 },
-  glucose_hba1c:     { hi_normal:5.7, hi_border:6.4 },
-  uric_acid:         { hi_normal:6.0, hi_border:7.0 },
-  creatinine:        { lo_normal:0.6, hi_normal:1.2 },
-  hemoglobin:        { lo_normal:12,  hi_normal:17.5 },
-};
 
 /* ═══════════════════════════════════════════════════════════════════
    Utilities
@@ -470,12 +493,21 @@ function now() {
 const b = (cls,txt) => `<span class="badge badge-${cls}">${txt}</span>`;
 
 function labBadge(type, val) {
-  const r = REF[type]; if (!r) return '';
-  if (r.higher_better) return val >= (r.lo_good||0) ? b('success','Good') : b('danger','Low');
-  if (r.lo_normal && val < r.lo_normal) return b('warning','Low');
-  if (r.hi_normal && val <= r.hi_normal) return b('success','Normal');
-  if (r.hi_border && val <= r.hi_border) return b('warning','Borderline');
+  const r = S.labTypeMap[type]; if (!r) return '';
+  if (r.higher_better) return val >= (r.low||0) ? b('success','Good') : b('danger','Low');
+  if (r.low != null && val < r.low) return b('warning','Low');
+  if (r.normal_max != null && val <= r.normal_max) return b('success','Normal');
+  if (r.borderline_max != null && val <= r.borderline_max) return b('warning','Borderline');
   return b('danger','High');
+}
+
+function refRangeText(r) {
+  if (!r) return '';
+  if (r.higher_better) return `Good: ≥ ${r.low} ${r.unit}`;
+  const lo  = r.low != null && r.low > 0 ? `${r.low}–` : '';
+  const hi  = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : '';
+  const bor = r.borderline_max != null && r.borderline_max < 900 ? ` · border ≤ ${r.borderline_max}` : '';
+  return `${lo}${hi} ${r.unit}${bor}`;
 }
 function bpBadge(s, d) {
   if (!s||!d) return '';
@@ -508,7 +540,7 @@ function showAlert(id, type, msg, ms=4000) {
 function go(tab) {
   S.activeTab = tab;
   document.querySelectorAll('.tab').forEach((b,i)=>{
-    const names=['overview','weight','labs','vitals','settings'];
+    const names=['overview','weight','labs','vitals','ranges','settings'];
     b.classList.toggle('active', names[i]===tab);
   });
   document.querySelectorAll('.panel').forEach(p=>{
@@ -518,6 +550,7 @@ function go(tab) {
   if      (tab==='weight') buildWeightChart(S.weights);
   else if (tab==='vitals') { buildBpChart(S.vitals); buildHrChart(S.vitals); }
   else if (tab==='labs')   buildLabChart(S.labs, S.activeLab);
+  else if (tab==='ranges') renderRanges();
 }
 
 function toggle(formId, arrowId) {
@@ -531,6 +564,7 @@ function toggle(formId, arrowId) {
    Data loading
 ══════════════════════════════════════════════════════════════════ */
 async function loadAll() {
+  await loadPreferences();  // must complete before loadLabTypes uses gender
   await Promise.allSettled([
     loadHAUser(),
     load('weights', buildUrl('health/body-metrics', S.range)),
@@ -540,6 +574,14 @@ async function loadAll() {
     loadGoogle(),
   ]);
   renderOverview();
+}
+
+async function loadPreferences() {
+  try { S.prefs = await req('GET', 'auth/preferences'); } catch { S.prefs = { gender: 'unset' }; }
+  // Sync gender picker buttons
+  document.querySelectorAll('.gpick-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.g === S.prefs.gender);
+  });
 }
 
 async function loadHAUser() {
@@ -568,7 +610,8 @@ function render(key) {
 
 async function loadLabTypes() {
   try {
-    S.labTypes = await req('GET', 'health/lab-types');
+    const g = S.prefs?.gender && S.prefs.gender !== 'unset' ? '?gender=' + S.prefs.gender : '';
+    S.labTypes = await req('GET', 'health/lab-types' + g);
     S.labTypeMap = Object.fromEntries(S.labTypes.map(t=>[t.test_type, t]));
     const sel      = document.getElementById('lr_type');
     const filt     = document.getElementById('labFilter');
@@ -665,9 +708,9 @@ function renderLabs() {
     <tbody>${rows.map(r=>`<tr>
       <td>${fmt(r.measured_at)}</td>
       <td>${S.labTypeMap[r.test_type]?.display_name??r.test_type}</td>
-      <td><strong>${r.value} ${r.unit}</strong></td>
+      <td><strong>${r.value} ${r.unit}</strong>${S.labTypeMap[r.test_type]?`<div class="ref-range">${refRangeText(S.labTypeMap[r.test_type])}</div>`:''}</td>
       <td>${labBadge(r.test_type,r.value)}</td>
-      <td style="color:var(--gray-500)">${r.lab_name??'—'}</td>
+      <td style="color:var(--text-secondary)">${r.lab_name??'—'}</td>
       ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
         ${ss?`<button onclick="syncRec('lab-results',${r.id})">Sync</button>`:''}
@@ -1068,17 +1111,84 @@ function onTypeChange() {
   unitSel.innerHTML = opts.map(u => `<option value="${u}">${u}</option>`).join('');
   unitSel.value = opts[0]; // default = first option (mg/dL preferred)
 
-  // Reference range hint uses the default unit
-  const r = REF[t.test_type];
-  if (r) {
-    const parts = [];
-    if (r.lo_normal) parts.push(`Low < ${r.lo_normal}`);
-    if (r.hi_normal && r.hi_normal<999) parts.push(`Normal ≤ ${r.hi_normal}`);
-    if (r.hi_border && r.hi_border<999) parts.push(`Borderline ≤ ${r.hi_border}`);
-    document.getElementById('lr_hint').textContent = parts.join(' · ') + (parts.length ? ' '+opts[0] : '');
-  } else {
-    document.getElementById('lr_hint').textContent = '';
-  }
+  // Reference range hint — uses gender-adjusted values from S.labTypeMap
+  document.getElementById('lr_hint').textContent = refRangeText(t) || '';
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Gender preference
+══════════════════════════════════════════════════════════════════ */
+async function setGender(g) {
+  try {
+    await req('PUT', 'auth/preferences', { gender: g });
+    S.prefs = { gender: g };
+    document.querySelectorAll('.gpick-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.g === g);
+    });
+    const saved = document.getElementById('genderSaved');
+    saved.textContent = 'Saved';
+    setTimeout(() => { saved.textContent = ''; }, 2000);
+    // Reload lab types with new gender and re-render
+    const prevMap = S.labTypeMap;
+    S.labTypeMap = {};
+    // Clear and repopulate dropdowns
+    ['lr_type','labFilter','labChartType'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const first = el.querySelector('option');
+      el.innerHTML = '';
+      if (first) el.appendChild(first);
+    });
+    await loadLabTypes();
+    renderLabs();
+    renderOverview();
+    if (S.activeTab === 'ranges') renderRanges();
+  } catch(e) { alert('Failed to save gender: ' + e.message); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Reference ranges tab
+══════════════════════════════════════════════════════════════════ */
+const RANGE_CATEGORIES = [
+  { label: 'Lipids',  types: ['cholesterol_total','cholesterol_ldl','cholesterol_hdl','triglycerides'] },
+  { label: 'Glucose', types: ['glucose_fasting','glucose_random','glucose_hba1c'] },
+  { label: 'Kidney',  types: ['creatinine','uric_acid'] },
+  { label: 'Blood',   types: ['hemoglobin'] },
+];
+
+function renderRanges() {
+  const gender = S.prefs?.gender;
+  const note   = gender && gender !== 'unset' ? ` (${gender} ranges)` : ' (universal ranges)';
+  document.getElementById('rangesGenderNote').textContent = note;
+
+  // Latest result per test type
+  const latest = S.labs.reduce((acc, r) => {
+    const prev = acc[r.test_type];
+    if (!prev || new Date(r.measured_at) > new Date(prev.measured_at)) acc[r.test_type] = r;
+    return acc;
+  }, {});
+
+  const rows = RANGE_CATEGORIES.flatMap(cat => {
+    const catRows = cat.types
+      .map(t => S.labTypeMap[t])
+      .filter(Boolean)
+      .map(r => {
+        const l = latest[r.test_type];
+        const latestCell = l
+          ? `<strong>${l.value} ${l.unit}</strong> ${labBadge(r.test_type, l.value)}`
+          : '<span style="color:var(--text-hint)">—</span>';
+        return `<tr>
+          <td><strong>${r.display_name}</strong><br><span style="font-size:11px;color:var(--text-secondary)">${cat.label}</span></td>
+          <td style="color:var(--text-secondary)">${refRangeText(r)}</td>
+          <td>${latestCell}</td>
+        </tr>`;
+      });
+    return catRows;
+  });
+
+  document.getElementById('rangesTbl').innerHTML = rows.length
+    ? `<thead><tr><th>Test</th><th>Normal Range</th><th>Your Latest</th></tr></thead><tbody>${rows.join('')}</tbody>`
+    : '<tbody><tr><td colspan="3" class="empty">Loading…</td></tr></tbody>';
 }
 
 /* ═══════════════════════════════════════════════════════════════════
