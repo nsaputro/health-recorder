@@ -35,8 +35,8 @@ function StatusBadge({ value, range: r }: { value: number; range?: LabReferenceR
 
 function refRangeText(r: LabReferenceRange): string {
   if (r.higher_better) return `Good: ≥ ${r.low} ${r.unit}`
-  const lo = r.low != null ? `${r.low}–` : '< '
   const hi = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : ''
+  const lo = r.low != null && r.low > 0 ? `${r.low}–` : (hi ? '< ' : '')
   const bor = r.borderline_max != null && r.borderline_max < 900 ? ` · Border: ≤ ${r.borderline_max}` : ''
   return `Normal: ${lo}${hi} ${r.unit}${bor}`
 }
