@@ -11,7 +11,7 @@ interface Props {
 export default function VitalSignForm({ onSubmit, defaultValues, loading }: Props) {
   const { register, handleSubmit } = useForm<VitalSignCreate>({
     defaultValues: {
-      measured_at: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      measured_at: format(new Date(), 'yyyy-MM-dd'),
       ...defaultValues,
     },
   })
@@ -21,7 +21,7 @@ export default function VitalSignForm({ onSubmit, defaultValues, loading }: Prop
       <div>
         <label className="label">Measured At</label>
         <input
-          type="datetime-local"
+          type="date"
           className="input"
           {...register('measured_at', { required: 'Required' })}
         />
