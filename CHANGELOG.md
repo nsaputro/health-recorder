@@ -8,6 +8,19 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+### Added
+- **Gender-dependent lab reference ranges**: hemoglobin, creatinine, uric acid, and HDL
+  cholesterol now return gender-adjusted normal ranges when a biological sex is set.
+  The `/health/lab-types` endpoint accepts an optional `?gender=` query parameter.
+- **User gender preference**: new `GET/PUT /auth/preferences` endpoints store the user's
+  biological sex (`male` / `female` / `unset`) per-user (HA addon) or globally (standalone).
+- **Reference Ranges tab** in both UIs: dedicated view listing all 10 supported lab tests
+  with their normal ranges (gender-adjusted if set), grouped by category (Lipids, Glucose,
+  Kidney, Blood), and showing the user's most recent result alongside the reference.
+- Gender selector card in the Settings screen of both the HA addon and the React frontend.
+- Reference range sub-line shown below each result value in the lab results table.
+- `higher_better` flag added to `LabReferenceRange` schema (true for HDL cholesterol).
+
 ## [0.3.3] - 2026-05-28
 
 ### Changed

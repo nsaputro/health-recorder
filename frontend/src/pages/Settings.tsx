@@ -1,12 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { googleAuth, syncAll } from '../api/client'
+import { googleAuth, syncAll, userPrefs } from '../api/client'
+import type { UserPreference } from '../types/health'
 
 export default function SettingsPage() {
   const qc = useQueryClient()
   const [searchParams] = useSearchParams()
   const justConnected = searchParams.get('google_connected') === '1'
   const googleError   = searchParams.get('google_error')
+
+  const { data: prefs } = useQuery({ queryKey: ['user-prefs'], queryFn: userPrefs.get, retry: false })
+  const prefsMutation = useMutation({
+    mutationFn: userPrefs.update,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['user-prefs'] })
+      qc.invalidateQueries({ queryKey: ['lab-types'] })
+    },
+  })
+
 
   const { data: cred, isLoading } = useQuery({
     queryKey: ['google-status'],
@@ -27,6 +38,35 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold">Settings</h1>
+
+      {/* Profile */}
+      <div className="card space-y-4">
+        <h2 className="text-base font-semibold">Profile</h2>
+        <div>
+          <label className="label">
+            Biological Sex <span className="text-gray-400 font-normal">(used for lab reference ranges)</span>
+          </label>
+          <div className="flex gap-2 mt-1">
+            {(['unset', 'male', 'female'] as UserPreference['gender'][]).map((g) => (
+              <button
+                key={g}
+                onClick={() => prefsMutation.mutate({ gender: g })}
+                disabled={prefsMutation.isPending}
+                className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                  prefs?.gender === g
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {g === 'unset' ? 'Not set' : g.charAt(0).toUpperCase() + g.slice(1)}
+              </button>
+            ))}
+          </div>
+          {prefsMutation.isSuccess && (
+            <p className="text-xs text-green-600 mt-1">Saved</p>
+          )}
+        </div>
+      </div>
 
       {/* Google connection */}
       <div className="card space-y-4">

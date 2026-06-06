@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
-import { labResults as api } from '../api/client'
+import { labResults as api, userPrefs } from '../api/client'
 import LabResultForm from '../components/forms/LabResultForm'
 import LabResultChart from '../components/charts/LabResultChart'
 import TrendSummary from '../components/charts/TrendSummary'
@@ -23,13 +23,22 @@ const LAB_COLORS: Record<string, string> = {
 
 function StatusBadge({ value, range: r }: { value: number; range?: LabReferenceRange }) {
   if (!r) return null
-  if (r.test_type === 'cholesterol_hdl') {
+  if (r.higher_better) {
     if (value >= (r.low ?? 0)) return <span className="badge-success">Good</span>
     return <span className="badge-danger">Low</span>
   }
+  if (r.low != null && value < r.low) return <span className="badge-warning">Low</span>
   if (value <= (r.normal_max ?? Infinity)) return <span className="badge-success">Normal</span>
   if (value <= (r.borderline_max ?? Infinity)) return <span className="badge-warning">Borderline</span>
   return <span className="badge-danger">High</span>
+}
+
+function refRangeText(r: LabReferenceRange): string {
+  if (r.higher_better) return `Good: ≥ ${r.low} ${r.unit}`
+  const lo = r.low != null ? `${r.low}–` : '< '
+  const hi = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : ''
+  const bor = r.borderline_max != null && r.borderline_max < 900 ? ` · Border: ≤ ${r.borderline_max}` : ''
+  return `Normal: ${lo}${hi} ${r.unit}${bor}`
 }
 
 export default function LabResultsPage() {
@@ -47,9 +56,12 @@ export default function LabResultsPage() {
     }),
   })
 
+  const { data: prefs } = useQuery({ queryKey: ['user-prefs'], queryFn: userPrefs.get, retry: false })
+  const gender = prefs?.gender !== 'unset' ? prefs?.gender : undefined
+
   const { data: labTypes = [] } = useQuery({
-    queryKey: ['lab-types'],
-    queryFn: api.types,
+    queryKey: ['lab-types', gender],
+    queryFn: () => api.types(gender),
   })
 
   const createMutation = useMutation({
@@ -169,7 +181,12 @@ export default function LabResultsPage() {
                   <tr key={r.id} className="hover:bg-gray-50">
                     <td className="py-2 pr-4 text-gray-600">{format(parseISO(r.measured_at), 'MMM d, yyyy')}</td>
                     <td className="py-2 pr-4 font-medium">{typeMap[r.test_type]?.display_name ?? r.test_type}</td>
-                    <td className="py-2 pr-4 font-semibold">{r.value} {r.unit}</td>
+                    <td className="py-2 pr-4">
+                      <span className="font-semibold">{r.value} {r.unit}</span>
+                      {typeMap[r.test_type] && (
+                        <div className="text-xs text-gray-400 mt-0.5">{refRangeText(typeMap[r.test_type])}</div>
+                      )}
+                    </td>
                     <td className="py-2 pr-4">
                       <StatusBadge value={r.value} range={typeMap[r.test_type]} />
                     </td>

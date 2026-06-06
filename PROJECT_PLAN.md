@@ -268,6 +268,15 @@ status (success|error), records_synced, error_message, created_at
 - ✅ **Time-range filter**: 1 month / 3 months / 6 months / 1 year / all time; backed by `?since=` API param
 - ✅ **Trend summary**: Latest / Avg / Min / Max shown below each chart for the selected period
 
+### Phase 3b — Gender-Adjusted Lab Reference Ranges (v0.4.0) ✅
+
+- ✅ **User gender preference**: `GET/PUT /auth/preferences` endpoints store biological sex (`male` / `female` / `unset`) per HA user; globally for the standalone app
+- ✅ **Gender-adjusted ranges**: hemoglobin, creatinine, uric acid, and HDL cholesterol return gender-specific normal ranges when `?gender=` is passed to `/health/lab-types`
+- ✅ **`higher_better` flag**: added to `LabReferenceRange` schema (true for HDL cholesterol); removes special-case hardcoding from UI
+- ✅ **Reference Ranges tab**: new dedicated tab in both UIs listing all 10 lab tests with normal ranges (gender-adjusted if set), grouped by category, showing the user's most recent result alongside each range
+- ✅ **Gender selector in Settings**: button-group picker in the Settings panel of both UIs; saves preference immediately and reloads all lab-type data with the new gender
+- ✅ **Ref-range sub-line in lab table**: each result row shows a small "Normal: X–Y unit" hint below the result value in both UIs
+
 ### Phase 4 — Frontend Modernisation (v0.4.0) ✅
 
 Upgrade the standalone `frontend/` to the latest major versions. The HA addon's vanilla-JS UI

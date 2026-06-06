@@ -201,3 +201,49 @@ class TestLabTypes:
             assert "test_type" in t
             assert "display_name" in t
             assert "unit" in t
+
+    def test_hdl_higher_better(self, client):
+        types = client.get("/health/lab-types").json()
+        hdl = next(t for t in types if t["test_type"] == "cholesterol_hdl")
+        assert hdl["higher_better"] is True
+
+    def test_gender_ranges_hemoglobin(self, client):
+        male   = client.get("/health/lab-types?gender=male").json()
+        female = client.get("/health/lab-types?gender=female").json()
+        hgb_m = next(t for t in male   if t["test_type"] == "hemoglobin")
+        hgb_f = next(t for t in female if t["test_type"] == "hemoglobin")
+        assert hgb_m["low"] == 13.5
+        assert hgb_f["low"] == 12.0
+        assert hgb_f["normal_max"] == 15.5
+
+    def test_gender_ranges_hdl(self, client):
+        male   = client.get("/health/lab-types?gender=male").json()
+        female = client.get("/health/lab-types?gender=female").json()
+        hdl_m = next(t for t in male   if t["test_type"] == "cholesterol_hdl")
+        hdl_f = next(t for t in female if t["test_type"] == "cholesterol_hdl")
+        assert hdl_m["low"] == 40
+        assert hdl_f["low"] == 50
+
+
+# ── User Preferences ─────────────────────────────────────────────────────────
+
+class TestUserPreferences:
+    def test_get_default_unset(self, client):
+        r = client.get("/auth/preferences")
+        assert r.status_code == 200
+        assert r.json()["gender"] == "unset"
+
+    def test_set_and_get_male(self, client):
+        client.put("/auth/preferences", json={"gender": "male"})
+        r = client.get("/auth/preferences")
+        assert r.json()["gender"] == "male"
+
+    def test_update_gender(self, client):
+        client.put("/auth/preferences", json={"gender": "male"})
+        client.put("/auth/preferences", json={"gender": "female"})
+        r = client.get("/auth/preferences")
+        assert r.json()["gender"] == "female"
+
+    def test_invalid_gender_rejected(self, client):
+        r = client.put("/auth/preferences", json={"gender": "other"})
+        assert r.status_code == 422

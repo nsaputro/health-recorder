@@ -4,7 +4,8 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..schemas.health import GoogleCredentialRead
+from ..models.health import UserPreferences
+from ..schemas.health import GoogleCredentialRead, UserPreferenceRead, UserPreferenceUpdate
 from ..services.google_auth import (
     get_authorization_url,
     exchange_code,
@@ -48,3 +49,22 @@ def google_disconnect(db: Session = Depends(get_db)):
     """Remove stored Google credentials."""
     revoke_credentials(db)
     return {"message": "Google account disconnected"}
+
+
+@router.get("/preferences", response_model=UserPreferenceRead)
+def get_preferences(db: Session = Depends(get_db)):
+    prefs = db.query(UserPreferences).filter_by(id=1).first()
+    return UserPreferenceRead(gender=prefs.gender if prefs else "unset")
+
+
+@router.put("/preferences", response_model=UserPreferenceRead)
+def update_preferences(data: UserPreferenceUpdate, db: Session = Depends(get_db)):
+    if data.gender not in ("male", "female", "unset"):
+        raise HTTPException(status_code=422, detail="gender must be male, female, or unset")
+    prefs = db.query(UserPreferences).filter_by(id=1).first()
+    if prefs:
+        prefs.gender = data.gender
+    else:
+        db.add(UserPreferences(id=1, gender=data.gender))
+    db.commit()
+    return UserPreferenceRead(gender=data.gender)

@@ -30,7 +30,7 @@ export default function Dashboard() {
   const { data: weights = [] } = useQuery({ queryKey: ['body-metrics'], queryFn: () => bodyMetrics.list({ limit: 30 }) })
   const { data: labs = [] }    = useQuery({ queryKey: ['lab-results'],  queryFn: () => labResults.list({ limit: 200 }) })
   const { data: vitals = [] }  = useQuery({ queryKey: ['vital-signs'],  queryFn: () => vitalSigns.list({ limit: 30 }) })
-  const { data: labTypes = [] }= useQuery({ queryKey: ['lab-types'],    queryFn: labResults.types })
+  const { data: labTypes = [] }= useQuery({ queryKey: ['lab-types'],    queryFn: () => labResults.types() })
   const { data: gCred }        = useQuery({ queryKey: ['google-status'], queryFn: googleAuth.status, retry: false })
 
   const syncMutation = useMutation({

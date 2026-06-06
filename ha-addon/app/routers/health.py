@@ -11,7 +11,7 @@ from ..schemas.health import (
     BodyMetricCreate, BodyMetricRead,
     LabResultCreate, LabResultRead,
     VitalSignCreate, VitalSignRead,
-    LAB_TEST_UNITS, LAB_TEST_DISPLAY, LAB_REFERENCE_RANGES,
+    LAB_TEST_UNITS, LAB_TEST_DISPLAY, LAB_REFERENCE_RANGES, _resolve_range,
     LabReferenceRange,
 )
 
@@ -314,11 +314,12 @@ def delete_vital_sign(
 # ── Reference data ────────────────────────────────────────────────────────────
 
 @router.get("/lab-types", response_model=List[LabReferenceRange])
-def list_lab_types():
+def list_lab_types(gender: Optional[str] = None):
     """Return all supported lab test types with display names and reference ranges."""
     result = []
     for key, display in LAB_TEST_DISPLAY.items():
-        ref = LAB_REFERENCE_RANGES.get(key, {})
+        base = LAB_REFERENCE_RANGES.get(key, {})
+        ref  = _resolve_range(base, gender)
         result.append(LabReferenceRange(
             test_type=key,
             display_name=display,
@@ -326,5 +327,6 @@ def list_lab_types():
             low=ref.get("low"),
             normal_max=ref.get("normal_max"),
             borderline_max=ref.get("borderline_max"),
+            higher_better=ref.get("higher_better", False),
         ))
     return result

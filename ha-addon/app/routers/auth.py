@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..dependencies import HAUser, get_ha_user
-from ..schemas.health import GoogleCredentialRead
+from ..models.health import UserPreferences
+from ..schemas.health import GoogleCredentialRead, UserPreferenceRead, UserPreferenceUpdate
 from ..services.google_auth import (
     exchange_code,
     get_authorization_url,
@@ -69,3 +70,26 @@ def google_status(user: HAUser = Depends(get_ha_user), db: Session = Depends(get
 def google_disconnect(user: HAUser = Depends(get_ha_user), db: Session = Depends(get_db)):
     revoke_credentials(db, ha_user_id=user.id)
     return {"message": "Google account disconnected"}
+
+
+@router.get("/preferences", response_model=UserPreferenceRead)
+def get_preferences(user: HAUser = Depends(get_ha_user), db: Session = Depends(get_db)):
+    prefs = db.query(UserPreferences).filter_by(ha_user_id=user.id).first()
+    return UserPreferenceRead(gender=prefs.gender if prefs else "unset")
+
+
+@router.put("/preferences", response_model=UserPreferenceRead)
+def update_preferences(
+    data: UserPreferenceUpdate,
+    user: HAUser = Depends(get_ha_user),
+    db: Session = Depends(get_db),
+):
+    if data.gender not in ("male", "female", "unset"):
+        raise HTTPException(status_code=422, detail="gender must be male, female, or unset")
+    prefs = db.query(UserPreferences).filter_by(ha_user_id=user.id).first()
+    if prefs:
+        prefs.gender = data.gender
+    else:
+        db.add(UserPreferences(ha_user_id=user.id, gender=data.gender))
+    db.commit()
+    return UserPreferenceRead(gender=data.gender)
