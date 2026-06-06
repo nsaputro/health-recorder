@@ -1328,7 +1328,7 @@ function renderRanges() {
         const l = latest[r.test_type];
         const hint = l ? labConvertedHint(l.test_type, l.value, l.unit, S.prefs?.lab_unit || 'mg_dl') : '';
         const latestCell = l
-          ? `<strong>${l.value} ${l.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''} ${labBadge(r.test_type, l.value, l.unit)}`
+          ? `<div><strong>${l.value} ${l.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''} ${labBadge(r.test_type, l.value, l.unit)}<div style="font-size:11px;color:var(--text-hint);margin-top:2px">${fmt(l.measured_at)}</div></div>`
           : '<span style="color:var(--text-hint)">—</span>';
         return `<tr>
           <td><strong>${r.display_name}</strong><br><span style="font-size:11px;color:var(--text-secondary)">${cat.label}</span></td>
