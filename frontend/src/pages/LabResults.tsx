@@ -98,8 +98,11 @@ export default function LabResultsPage() {
 
   const typeMap = Object.fromEntries(labTypes.map((t: LabReferenceRange) => [t.test_type, t]))
 
-  // Chart records — when a type is selected, records are already filtered server-side
-  const chartRecords = filterType ? records : []
+  // Chart records — when a type is selected, records are already filtered server-side.
+  // Normalize all values to the reference unit so mixed-unit records chart consistently.
+  const chartRecords = filterType
+    ? records.map((r) => ({ ...r, value: normalizeForBadge(filterType, r.value, r.unit) }))
+    : []
 
   // Sorted ascending for TrendSummary
   const sortedAsc = [...chartRecords].sort(

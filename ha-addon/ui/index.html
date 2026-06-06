@@ -1184,13 +1184,15 @@ function buildLabChart(data, testType) {
   ctx.style.display=''; if (empty) empty.style.display='none';
   const t    = S.labTypeMap[testType];
   const unit = t?.unit || rows[0]?.unit || '';
+  // Normalize all values to reference unit so mixed-unit records chart consistently
+  const normValues = rows.map(r => normalizeForBadge(testType, r.value, r.unit));
   Charts.lab = new Chart(ctx, {
     type:'line',
     data:{
       labels:rows.map(r=>fmt(r.measured_at)),
       datasets:[{
         label: t?.display_name || testType,
-        data:rows.map(r=>r.value),
+        data:normValues,
         borderColor:'#6366f1',
         backgroundColor:'rgba(99,102,241,.08)',
         tension:0.3, pointRadius:4, fill:true,
@@ -1202,7 +1204,7 @@ function buildLabChart(data, testType) {
       scales:{y:{title:{display:true,text:unit,font:{size:11}}}},
     },
   });
-  renderTStats('labStats', rows.map(r=>r.value), unit, 1);
+  renderTStats('labStats', normValues, unit, 1);
 }
 
 function onLabChartTypeChange() {
