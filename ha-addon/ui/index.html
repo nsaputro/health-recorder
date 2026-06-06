@@ -500,11 +500,31 @@ const MMOL_FACTORS = {
 
 function hba1cToPercent(mmolMol) { return Math.round((0.09148 * mmolMol + 2.152) * 10) / 10; }
 function hba1cToMmolMol(percent) { return Math.round((percent - 2.152) / 0.09148); }
+const isUmolPerL = u => u === 'µmol/L' || u === 'μmol/L';
+
+function normalizeForBadge(testType, val, unit) {
+  if (testType === 'glucose_hba1c' && unit === 'mmol/mol') return hba1cToPercent(val);
+  if (testType === 'creatinine'   && isUmolPerL(unit))     return Math.round(val / 88.42 * 100) / 100;
+  if (testType === 'hemoglobin'   && unit === 'g/L')       return Math.round(val / 10   * 100) / 100;
+  const f = MMOL_FACTORS[testType];
+  if (f && unit === 'mmol/L') return Math.round(val / f * 10) / 10;
+  return val;
+}
 
 function labConvertedHint(testType, value, storedUnit, prefUnit) {
   if (testType === 'glucose_hba1c') {
     if (storedUnit === 'mmol/mol' && prefUnit === 'mg_dl') return `(${hba1cToPercent(value)} %)`;
     if (storedUnit === '%' && prefUnit === 'mmol') return `(${hba1cToMmolMol(value)} mmol/mol)`;
+    return '';
+  }
+  if (testType === 'creatinine') {
+    if (isUmolPerL(storedUnit)) return `(${Math.round(value / 88.42 * 100) / 100} mg/dL)`;
+    if (storedUnit === 'mg/dL' && prefUnit === 'mmol') return `(${Math.round(value * 88.42)} µmol/L)`;
+    return '';
+  }
+  if (testType === 'hemoglobin') {
+    if (storedUnit === 'g/L')  return `(${Math.round(value / 10 * 100) / 100} g/dL)`;
+    if (storedUnit === 'g/dL' && prefUnit === 'mmol') return `(${Math.round(value * 10 * 10) / 10} g/L)`;
     return '';
   }
   const wantsMgdl  = prefUnit === 'mg_dl';
@@ -558,7 +578,7 @@ const TRASH_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="1
 
 function labBadge(type, val, unit) {
   const r = S.labTypeMap[type]; if (!r) return '';
-  const v = (type === 'glucose_hba1c' && unit === 'mmol/mol') ? hba1cToPercent(val) : val;
+  const v = normalizeForBadge(type, val, unit);
   if (r.higher_better) return v >= (r.low||0) ? b('success','Good') : b('danger','Low');
   if (r.low != null && v < r.low) return b('warning','Low');
   if (r.normal_max != null && v <= r.normal_max) return b('success','Normal');

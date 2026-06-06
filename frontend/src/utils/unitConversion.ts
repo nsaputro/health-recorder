@@ -29,9 +29,17 @@ export function hba1cToMmolMol(percent: number): number {
   return Math.round((percent - 2.152) / 0.09148)
 }
 
-// Normalize a lab value to the unit used in reference ranges (always % for HbA1c)
+// µmol/L character comes in two Unicode forms (U+00B5 and U+03BC) — normalise before comparing
+const isUmolPerL = (u: string) => u === 'µmol/L' || u === 'μmol/L'
+
+// Normalise a lab value to the unit used in reference ranges before badge comparison.
+// Reference ranges are always stored in primary units: mg/dL, %, g/dL.
 export function normalizeForBadge(testType: string, value: number, unit: string): number {
   if (testType === 'glucose_hba1c' && unit === 'mmol/mol') return hba1cToPercent(value)
+  if (testType === 'creatinine'   && isUmolPerL(unit)) return Math.round(value / 88.42 * 100) / 100
+  if (testType === 'hemoglobin'   && unit === 'g/L')    return Math.round(value / 10  * 100) / 100
+  const f = MMOL_FACTORS[testType]
+  if (f && unit === 'mmol/L') return Math.round(value / f * 10) / 10
   return value
 }
 
@@ -41,12 +49,25 @@ export function labConvertedHint(
   storedUnit: string,
   prefUnit: 'mg_dl' | 'mmol',
 ): string {
-  // HbA1c uses an affine conversion — handled independently of the mmol/L preference
+  // HbA1c: affine conversion — independent of the mmol/L preference
   if (testType === 'glucose_hba1c') {
     if (storedUnit === 'mmol/mol' && prefUnit === 'mg_dl') return `(${hba1cToPercent(value)} %)`
     if (storedUnit === '%' && prefUnit === 'mmol') return `(${hba1cToMmolMol(value)} mmol/mol)`
     return ''
   }
+  // Creatinine: µmol/L ↔ mg/dL (1 mg/dL = 88.42 µmol/L)
+  if (testType === 'creatinine') {
+    if (isUmolPerL(storedUnit)) return `(${Math.round(value / 88.42 * 100) / 100} mg/dL)`
+    if (storedUnit === 'mg/dL' && prefUnit === 'mmol') return `(${Math.round(value * 88.42)} µmol/L)`
+    return ''
+  }
+  // Hemoglobin: g/L ↔ g/dL (1 g/dL = 10 g/L)
+  if (testType === 'hemoglobin') {
+    if (storedUnit === 'g/L')  return `(${Math.round(value / 10 * 100) / 100} g/dL)`
+    if (storedUnit === 'g/dL' && prefUnit === 'mmol') return `(${Math.round(value * 10 * 10) / 10} g/L)`
+    return ''
+  }
+  // Standard mg/dL ↔ mmol/L (cholesterol, triglycerides, glucose, uric acid)
   const wantsMgdl = prefUnit === 'mg_dl'
   const storedIsMgdl = storedUnit === 'mg/dL'
   if (wantsMgdl === storedIsMgdl) return ''
