@@ -245,7 +245,7 @@ tr:hover td{background:var(--hover-bg)}
     </button>
     <div class="form-body" id="bmForm">
       <form id="bmFrm">
-        <div class="fg"><label>Measured At</label><input type="datetime-local" id="bm_at" required></div>
+        <div class="fg"><label>Measured At</label><input type="date" id="bm_at" required></div>
         <div class="row2">
           <div class="fg"><label>Weight (kg)</label><input type="number" step=".1" min="1" id="bm_wt" placeholder="e.g. 72.5" required oninput="updateWtHint(this.value)"><span id="bm_wt_hint" class="hint"></span></div>
           <div class="fg"><label>Height (cm) <em>optional</em></label><input type="number" step=".1" min="1" id="bm_ht" placeholder="e.g. 170"></div>
@@ -285,7 +285,7 @@ tr:hover td{background:var(--hover-bg)}
     </button>
     <div class="form-body" id="lrForm">
       <form id="lrFrm">
-        <div class="fg"><label>Measured At</label><input type="datetime-local" id="lr_at" required></div>
+        <div class="fg"><label>Measured At</label><input type="date" id="lr_at" required></div>
         <div class="fg"><label>Test Type</label>
           <select id="lr_type" onchange="onTypeChange()" required><option value="">Select…</option></select>
         </div>
@@ -340,7 +340,7 @@ tr:hover td{background:var(--hover-bg)}
     </button>
     <div class="form-body" id="vsForm">
       <form id="vsFrm">
-        <div class="fg"><label>Measured At</label><input type="datetime-local" id="vs_at" required></div>
+        <div class="fg"><label>Measured At</label><input type="date" id="vs_at" required></div>
         <div class="fg">
           <label>Blood Pressure</label>
           <div class="row2">
@@ -461,7 +461,7 @@ tr:hover td{background:var(--hover-bg)}
    State
 ══════════════════════════════════════════════════════════════════ */
 const S = {
-  weights: [], labs: [], vitals: [],
+  weights: [], labs: [], vitals: [], allLabs: [],
   labTypes: [], labTypeMap: {},
   google: null,
   prefs: { gender: 'unset', lab_unit: 'mg_dl', weight_unit: 'kg' },
@@ -570,8 +570,7 @@ function fmtDT(iso) {
   return new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 function now() {
-  const d = new Date(); d.setSeconds(0,0);
-  return d.toISOString().slice(0,16);
+  return new Date().toISOString().slice(0,10);
 }
 const b = (cls,txt) => `<span class="badge badge-${cls}">${txt}</span>`;
 const TRASH_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>`;
@@ -655,6 +654,7 @@ async function loadAll() {
     load('weights', buildUrl('health/body-metrics', S.range)),
     load('vitals',  buildUrl('health/vital-signs',  S.range)),
     load('labs',    buildUrl('health/lab-results',  S.range)),
+    load('allLabs', 'health/lab-results?limit=500'),
     loadLabTypes(),
     loadGoogle(),
   ]);
@@ -773,7 +773,7 @@ function renderWeights() {
   el.innerHTML = `<div class="tbl-bleed"><table>
     <thead><tr><th>Date/Time</th><th>Weight</th><th>BMI</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
     <tbody>${S.weights.map(r=>{const wh=weightHint(r.weight_kg);return`<tr>
-      <td>${fmtDT(r.measured_at)}</td>
+      <td>${fmt(r.measured_at)}</td>
       <td><strong>${r.weight_kg} kg</strong>${wh?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${wh}</span>`:''}</td>
       <td>${r.bmi ? r.bmi+' '+bmiBadge(r.bmi) : '—'}</td>
       ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
@@ -823,7 +823,7 @@ function renderVitals() {
   el.innerHTML = `<div class="tbl-bleed"><table>
     <thead><tr><th>Date/Time</th><th>Blood Pressure</th><th>Status</th><th>Heart Rate</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
     <tbody>${S.vitals.map(r=>`<tr>
-      <td>${fmtDT(r.measured_at)}</td>
+      <td>${fmt(r.measured_at)}</td>
       <td>${r.systolic_bp&&r.diastolic_bp ? '<strong>'+r.systolic_bp+'/'+r.diastolic_bp+'</strong> mmHg' : '—'}</td>
       <td>${bpBadge(r.systolic_bp,r.diastolic_bp)}</td>
       <td>${r.heart_rate ? r.heart_rate+' bpm' : '—'}</td>
@@ -942,7 +942,10 @@ document.getElementById('lrFrm').addEventListener('submit', async e => {
     showAlert('lrAlert','success','✓ Result saved!');
     e.target.reset();
     document.getElementById('lr_at').value = now();
-    await load('labs', buildUrl('health/lab-results', S.range));
+    await Promise.all([
+      load('labs', buildUrl('health/lab-results', S.range)),
+      load('allLabs', 'health/lab-results?limit=500'),
+    ]);
     renderOverview();
   } catch(err) { showAlert('lrAlert','error','✗ '+err.message); }
   finally { btn.disabled=false; btn.textContent='Save Result'; }
@@ -998,7 +1001,7 @@ async function delRec(type, id) {
   try {
     await req('DELETE',`health/${type}/${id}`);
     if      (type==='body-metrics') { S.weights = S.weights.filter(r=>r.id!==id); renderWeights(); }
-    else if (type==='lab-results')  { S.labs    = S.labs.filter(r=>r.id!==id);    renderLabs(); }
+    else if (type==='lab-results')  { S.labs = S.labs.filter(r=>r.id!==id); S.allLabs = S.allLabs.filter(r=>r.id!==id); renderLabs(); }
     else                            { S.vitals  = S.vitals.filter(r=>r.id!==id);  renderVitals(); }
     renderOverview();
   } catch(e) { alert('Delete failed: '+e.message); }
@@ -1307,8 +1310,8 @@ function renderRanges() {
   const note   = gender && gender !== 'unset' ? ` (${gender} ranges)` : ' (universal ranges)';
   document.getElementById('rangesGenderNote').textContent = note;
 
-  // Latest result per test type
-  const latest = S.labs.reduce((acc, r) => {
+  // Latest result per test type — use allLabs so the range filter doesn't hide older entries
+  const latest = S.allLabs.reduce((acc, r) => {
     const prev = acc[r.test_type];
     if (!prev || new Date(r.measured_at) > new Date(prev.measured_at)) acc[r.test_type] = r;
     return acc;

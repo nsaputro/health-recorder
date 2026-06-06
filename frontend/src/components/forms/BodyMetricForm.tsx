@@ -13,7 +13,7 @@ interface Props {
 export default function BodyMetricForm({ onSubmit, defaultValues, loading, weightUnit }: Props) {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<BodyMetricCreate>({
     defaultValues: {
-      measured_at: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      measured_at: format(new Date(), 'yyyy-MM-dd'),
       ...defaultValues,
     },
   })
@@ -25,7 +25,7 @@ export default function BodyMetricForm({ onSubmit, defaultValues, loading, weigh
       <div>
         <label className="label">Measured At</label>
         <input
-          type="datetime-local"
+          type="date"
           className="input"
           {...register('measured_at', { required: 'Required' })}
         />

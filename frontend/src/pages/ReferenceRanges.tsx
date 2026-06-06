@@ -40,7 +40,7 @@ export default function ReferenceRangesPage() {
   })
 
   const { data: allResults = [] } = useQuery({
-    queryKey: ['lab-results', '', 120],
+    queryKey: ['lab-results-all'],
     queryFn: () => labApi.list({ limit: 500 }),
   })
 

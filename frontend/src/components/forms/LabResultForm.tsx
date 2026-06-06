@@ -53,7 +53,7 @@ export default function LabResultForm({ onSubmit, defaultValues, loading, labUni
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<LabResultCreate>({
     defaultValues: {
-      measured_at: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      measured_at: format(new Date(), 'yyyy-MM-dd'),
       test_type: 'cholesterol_total',
       ...defaultValues,
     },
@@ -82,7 +82,7 @@ export default function LabResultForm({ onSubmit, defaultValues, loading, labUni
       <div>
         <label className="label">Measured At</label>
         <input
-          type="datetime-local"
+          type="date"
           className="input"
           {...register('measured_at', { required: 'Required' })}
         />
