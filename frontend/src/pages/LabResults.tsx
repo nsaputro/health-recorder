@@ -33,13 +33,21 @@ function StatusBadge({ value, range: r }: { value: number; range?: LabReferenceR
   return <span className="badge-danger">High</span>
 }
 
-function refRangeText(r: LabReferenceRange): string {
+function refRangeText(r: LabReferenceRange, compact = false): string {
   if (r.higher_better) return `Good: ≥ ${r.low} ${r.unit}`
-  const lo = r.low != null ? `${r.low}–` : '< '
-  const hi = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : ''
-  const bor = r.borderline_max != null && r.borderline_max < 900 ? ` · Border: ≤ ${r.borderline_max}` : ''
+  const hi  = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : ''
+  const lo  = r.low != null && r.low > 0 ? `${r.low}–` : (hi ? '< ' : '')
+  const bor = !compact && r.borderline_max != null && r.borderline_max < 900
+    ? ` · Border: ≤ ${r.borderline_max}` : ''
   return `Normal: ${lo}${hi} ${r.unit}${bor}`
 }
+
+const TrashIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4">
+    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+  </svg>
+)
 
 export default function LabResultsPage() {
   const qc = useQueryClient()
@@ -148,9 +156,9 @@ export default function LabResultsPage() {
         ) : null}
       </div>
 
-      {/* Table */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
+      {/* Table — edge-to-edge within card */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-6 pt-6 pb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold">All Results ({records.length})</h2>
           {filterType && (
             <button className="text-xs text-blue-600 hover:underline" onClick={() => setFilterType('')}>
@@ -159,55 +167,58 @@ export default function LabResultsPage() {
           )}
         </div>
         {isLoading ? (
-          <p className="text-gray-400">Loading…</p>
+          <p className="px-6 pb-6 text-gray-400">Loading…</p>
         ) : records.length === 0 ? (
-          <p className="text-gray-400 text-sm">No results yet.</p>
+          <p className="px-6 pb-6 text-gray-400 text-sm">No results yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-500 border-b text-xs uppercase tracking-wide">
-                  <th className="pb-2 pr-4">Date</th>
-                  <th className="pb-2 pr-4">Test</th>
-                  <th className="pb-2 pr-4">Result</th>
-                  <th className="pb-2 pr-4">Status</th>
-                  <th className="pb-2 pr-4">Lab</th>
-                  <th className="pb-2 pr-4">Sync</th>
-                  <th className="pb-2">Actions</th>
+                  <th className="pb-2 pr-3 pl-6">Date</th>
+                  <th className="pb-2 pr-3">Test</th>
+                  <th className="pb-2 pr-3">Result</th>
+                  <th className="pb-2 pr-3">Status</th>
+                  <th className="pb-2 pr-3">Lab</th>
+                  <th className="pb-2 pr-3">Sync</th>
+                  <th className="pb-2 pr-6">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {records.map((r) => (
                   <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="py-2 pr-4 text-gray-600">{format(parseISO(r.measured_at), 'MMM d, yyyy')}</td>
-                    <td className="py-2 pr-4 font-medium">{typeMap[r.test_type]?.display_name ?? r.test_type}</td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pr-3 pl-6 text-gray-600">{format(parseISO(r.measured_at), 'MMM d, yyyy')}</td>
+                    <td className="py-2 pr-3 font-medium">{typeMap[r.test_type]?.display_name ?? r.test_type}</td>
+                    <td className="py-2 pr-3">
                       <span className="font-semibold">{r.value} {r.unit}</span>
                       {typeMap[r.test_type] && (
-                        <div className="text-xs text-gray-400 mt-0.5">{refRangeText(typeMap[r.test_type])}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{refRangeText(typeMap[r.test_type], true)}</div>
                       )}
                     </td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pr-3">
                       <StatusBadge value={r.value} range={typeMap[r.test_type]} />
                     </td>
-                    <td className="py-2 pr-4 text-gray-500 text-xs">{r.lab_name ?? '—'}</td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pr-3 text-gray-500 text-xs">{r.lab_name ?? '—'}</td>
+                    <td className="py-2 pr-3">
                       <div className="flex gap-1">
                         {r.synced_to_fit     ? <span className="badge-success">Fit</span>    : <span className="badge-gray">Fit</span>}
                         {r.synced_to_sheets  ? <span className="badge-success">Sheets</span> : <span className="badge-gray">Sheets</span>}
                       </div>
                     </td>
-                    <td className="py-2">
-                      <div className="flex gap-2">
+                    <td className="py-2 pr-6">
+                      <div className="flex gap-2 items-center">
                         <button
                           className="text-blue-600 hover:underline text-xs"
                           onClick={() => syncMutation.mutate(r.id)}
                           disabled={syncMutation.isPending}
                         >Sync</button>
                         <button
-                          className="text-red-500 hover:underline text-xs"
+                          className="text-red-400 hover:text-red-600 transition-colors"
+                          title="Delete"
                           onClick={() => { if (confirm('Delete this result?')) deleteMutation.mutate(r.id) }}
-                        >Delete</button>
+                        >
+                          <TrashIcon />
+                        </button>
                       </div>
                     </td>
                   </tr>

@@ -131,15 +131,20 @@ body{font-family:Roboto,'Noto Sans',sans-serif;background:var(--bg);color:var(--
 
 /* ── Table ──────────────────────────────────────────────────────────── */
 .tbl-wrap{overflow-x:auto}
+.tbl-bleed{margin:0 -16px;overflow-x:auto}
+.tbl-bleed th:first-child,.tbl-bleed td:first-child{padding-left:16px}
+.tbl-bleed th:last-child,.tbl-bleed td:last-child{padding-right:16px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);border-bottom:1px solid var(--divider);white-space:nowrap;font-weight:500}
 td{padding:10px 12px;border-bottom:1px solid var(--row-divider);vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--hover-bg)}
-.act{display:flex;gap:8px}
+.act{display:flex;gap:8px;align-items:center}
 .act button{font-size:12px;color:var(--primary);background:none;border:none;cursor:pointer;padding:2px 0;font-weight:500;letter-spacing:.01em;text-transform:uppercase}
 .act button.del{color:var(--danger)}
 .act button:hover{opacity:.7}
+.icon-btn{background:none;border:none;cursor:pointer;padding:2px;line-height:1;vertical-align:middle;color:var(--danger)}
+.icon-btn:hover{opacity:.7}
 
 /* ── Alert ──────────────────────────────────────────────────────────── */
 .alert{padding:12px 16px;border-radius:4px;font-size:13px;margin-top:10px}
@@ -491,6 +496,7 @@ function now() {
   return d.toISOString().slice(0,16);
 }
 const b = (cls,txt) => `<span class="badge badge-${cls}">${txt}</span>`;
+const TRASH_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>`;
 
 function labBadge(type, val) {
   const r = S.labTypeMap[type]; if (!r) return '';
@@ -501,12 +507,12 @@ function labBadge(type, val) {
   return b('danger','High');
 }
 
-function refRangeText(r) {
+function refRangeText(r, compact=false) {
   if (!r) return '';
   if (r.higher_better) return `Good: ≥ ${r.low} ${r.unit}`;
-  const lo  = r.low != null && r.low > 0 ? `${r.low}–` : '';
   const hi  = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : '';
-  const bor = r.borderline_max != null && r.borderline_max < 900 ? ` · border ≤ ${r.borderline_max}` : '';
+  const lo  = r.low != null && r.low > 0 ? `${r.low}–` : (hi ? '< ' : '');
+  const bor = !compact && r.borderline_max != null && r.borderline_max < 900 ? ` · border ≤ ${r.borderline_max}` : '';
   return `${lo}${hi} ${r.unit}${bor}`;
 }
 function bpBadge(s, d) {
@@ -679,7 +685,7 @@ function renderWeights() {
   const el = document.getElementById('weightTbl');
   if (!S.weights.length) { el.innerHTML='<div class="empty">No entries yet.</div>'; return; }
   const ss = !!S.google;
-  el.innerHTML = `<div class="tbl-wrap"><table>
+  el.innerHTML = `<div class="tbl-bleed"><table>
     <thead><tr><th>Date/Time</th><th>Weight</th><th>BMI</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
     <tbody>${S.weights.map(r=>`<tr>
       <td>${fmtDT(r.measured_at)}</td>
@@ -688,7 +694,7 @@ function renderWeights() {
       ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
         ${ss?`<button onclick="syncRec('body-metrics',${r.id})">Sync</button>`:''}
-        <button class="del" onclick="delRec('body-metrics',${r.id})">Delete</button>
+        <button class="icon-btn" title="Delete" onclick="delRec('body-metrics',${r.id})">${TRASH_ICON}</button>
       </div></td>
     </tr>`).join('')}</tbody>
   </table></div>`;
@@ -703,18 +709,18 @@ function renderLabs() {
   const el = document.getElementById('labTbl');
   if (!rows.length) { el.innerHTML='<div class="empty">No results yet.</div>'; return; }
   const ss = !!S.google;
-  el.innerHTML = `<div class="tbl-wrap"><table>
+  el.innerHTML = `<div class="tbl-bleed"><table>
     <thead><tr><th>Date</th><th>Test</th><th>Result</th><th>Status</th><th>Lab</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
     <tbody>${rows.map(r=>`<tr>
       <td>${fmt(r.measured_at)}</td>
       <td>${S.labTypeMap[r.test_type]?.display_name??r.test_type}</td>
-      <td><strong>${r.value} ${r.unit}</strong>${S.labTypeMap[r.test_type]?`<div class="ref-range">${refRangeText(S.labTypeMap[r.test_type])}</div>`:''}</td>
+      <td><strong>${r.value} ${r.unit}</strong>${S.labTypeMap[r.test_type]?`<div class="ref-range">${refRangeText(S.labTypeMap[r.test_type],true)}</div>`:''}</td>
       <td>${labBadge(r.test_type,r.value)}</td>
       <td style="color:var(--text-secondary)">${r.lab_name??'—'}</td>
       ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
         ${ss?`<button onclick="syncRec('lab-results',${r.id})">Sync</button>`:''}
-        <button class="del" onclick="delRec('lab-results',${r.id})">Delete</button>
+        <button class="icon-btn" title="Delete" onclick="delRec('lab-results',${r.id})">${TRASH_ICON}</button>
       </div></td>
     </tr>`).join('')}</tbody>
   </table></div>`;
@@ -727,7 +733,7 @@ function renderVitals() {
   const el = document.getElementById('vitalTbl');
   if (!S.vitals.length) { el.innerHTML='<div class="empty">No readings yet.</div>'; return; }
   const ss = !!S.google;
-  el.innerHTML = `<div class="tbl-wrap"><table>
+  el.innerHTML = `<div class="tbl-bleed"><table>
     <thead><tr><th>Date/Time</th><th>Blood Pressure</th><th>Status</th><th>Heart Rate</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
     <tbody>${S.vitals.map(r=>`<tr>
       <td>${fmtDT(r.measured_at)}</td>
@@ -737,7 +743,7 @@ function renderVitals() {
       ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
         ${ss?`<button onclick="syncRec('vital-signs',${r.id})">Sync</button>`:''}
-        <button class="del" onclick="delRec('vital-signs',${r.id})">Delete</button>
+        <button class="icon-btn" title="Delete" onclick="delRec('vital-signs',${r.id})">${TRASH_ICON}</button>
       </div></td>
     </tr>`).join('')}</tbody>
   </table></div>`;
@@ -797,6 +803,11 @@ function renderGoogle() {
 /* ═══════════════════════════════════════════════════════════════════
    Form submissions
 ══════════════════════════════════════════════════════════════════ */
+function prefillHeight() {
+  const latest = (S.weights||[]).find(w => w.height_cm != null);
+  if (latest) document.getElementById('bm_ht').value = latest.height_cm;
+}
+
 document.getElementById('bmFrm').addEventListener('submit', async e => {
   e.preventDefault();
   const btn = document.getElementById('bmBtn');
@@ -812,6 +823,7 @@ document.getElementById('bmFrm').addEventListener('submit', async e => {
     e.target.reset();
     document.getElementById('bm_at').value = now();
     await load('weights', buildUrl('health/body-metrics', S.range));
+    prefillHeight();
     renderOverview();
   } catch(err) { showAlert('bmAlert','error','✗ '+err.message); }
   finally { btn.disabled=false; btn.textContent='Save Entry'; }
@@ -1217,6 +1229,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('vs_at').value = now();
   handleParams();
   await loadAll();
+  prefillHeight();
 });
 </script>
 </body>

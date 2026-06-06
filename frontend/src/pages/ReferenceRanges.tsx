@@ -11,8 +11,8 @@ const CATEGORIES: { label: string; types: string[] }[] = [
 
 function refRangeText(r: LabReferenceRange): string {
   if (r.higher_better) return `≥ ${r.low} ${r.unit} (higher is better)`
-  const lo = r.low != null && r.low > 0 ? `${r.low}–` : ''
   const hi = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : ''
+  const lo = r.low != null && r.low > 0 ? `${r.low}–` : (hi ? '< ' : '')
   const bor = r.borderline_max != null && r.borderline_max < 900 ? ` · border ≤ ${r.borderline_max}` : ''
   return `${lo}${hi} ${r.unit}${bor}`
 }
