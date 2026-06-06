@@ -8,6 +8,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-06
+
 ### Added
 - **Unit preference settings**: new `lab_unit` (`mg_dl` | `mmol`) and `weight_unit` (`kg` | `lb`)
   preferences stored per user. "Display Units" card added to Settings in both UIs.
@@ -167,7 +169,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/nsaputro/health-recorder/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/nsaputro/health-recorder/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/nsaputro/health-recorder/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/nsaputro/health-recorder/compare/v0.3.0...v0.3.1
