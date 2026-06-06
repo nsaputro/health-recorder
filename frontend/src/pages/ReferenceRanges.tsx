@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { format, parseISO } from 'date-fns'
 import { labResults as labApi, userPrefs } from '../api/client'
 import type { LabReferenceRange, LabResult } from '../types/health'
 import { convertRangeToMmol, labConvertedHint, normalizeForBadge } from '../utils/unitConversion'
@@ -94,13 +95,16 @@ export default function ReferenceRangesPage() {
                           <td className="py-2.5 pr-6 text-gray-600">{refRangeText(r)}</td>
                           <td className="py-2.5 pr-6">
                             {latest ? (
-                              <span className="font-semibold">
-                                {latest.value} {latest.unit}
-                                {prefs?.lab_unit && (() => {
-                                  const hint = labConvertedHint(latest.test_type, latest.value, latest.unit, prefs.lab_unit)
-                                  return hint ? <span className="text-gray-400 font-normal ml-1 text-xs">{hint}</span> : null
-                                })()}
-                              </span>
+                              <div>
+                                <span className="font-semibold">
+                                  {latest.value} {latest.unit}
+                                  {prefs?.lab_unit && (() => {
+                                    const hint = labConvertedHint(latest.test_type, latest.value, latest.unit, prefs.lab_unit)
+                                    return hint ? <span className="text-gray-400 font-normal ml-1 text-xs">{hint}</span> : null
+                                  })()}
+                                </span>
+                                <div className="text-xs text-gray-400 mt-0.5">{format(parseISO(latest.measured_at), 'MMM d, yyyy')}</div>
+                              </div>
                             ) : (
                               <span className="text-gray-400">—</span>
                             )}
