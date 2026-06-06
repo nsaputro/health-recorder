@@ -295,7 +295,7 @@ tr:hover td{background:var(--hover-bg)}
             <input type="number" step=".01" id="lr_val" placeholder="e.g. 180" required>
             <span class="hint" id="lr_hint"></span>
           </div>
-          <div class="fg"><label>Unit</label><select id="lr_unit"></select></div>
+          <div class="fg"><label>Unit</label><select id="lr_unit" onchange="onUnitChange()"></select></div>
         </div>
         <div class="fg"><label>Lab Name <em>optional</em></label><input type="text" id="lr_lab" placeholder="e.g. City Lab"></div>
         <div class="fg"><label>Notes <em>optional</em></label><textarea id="lr_notes" placeholder="Fasting? Medication?"></textarea></div>
@@ -480,7 +480,7 @@ const UNIT_OPTIONS = {
   triglycerides:     ['mg/dL', 'mmol/L'],
   glucose_fasting:   ['mg/dL', 'mmol/L'],
   glucose_random:    ['mg/dL', 'mmol/L'],
-  glucose_hba1c:     ['%'],
+  glucose_hba1c:     ['%', 'mmol/mol'],
   uric_acid:         ['mg/dL', 'mmol/L'],
   creatinine:        ['mg/dL', 'μmol/L'],
   hemoglobin:        ['g/dL', 'g/L'],
@@ -498,7 +498,15 @@ const MMOL_FACTORS = {
   uric_acid:         0.05948,
 };
 
+function hba1cToPercent(mmolMol) { return Math.round((0.09148 * mmolMol + 2.152) * 10) / 10; }
+function hba1cToMmolMol(percent) { return Math.round((percent - 2.152) / 0.09148); }
+
 function labConvertedHint(testType, value, storedUnit, prefUnit) {
+  if (testType === 'glucose_hba1c') {
+    if (storedUnit === 'mmol/mol' && prefUnit === 'mg_dl') return `(${hba1cToPercent(value)} %)`;
+    if (storedUnit === '%' && prefUnit === 'mmol') return `(${hba1cToMmolMol(value)} mmol/mol)`;
+    return '';
+  }
   const wantsMgdl  = prefUnit === 'mg_dl';
   const storedIsMgdl = storedUnit === 'mg/dL';
   if (wantsMgdl === storedIsMgdl) return '';
@@ -548,12 +556,13 @@ function now() {
 const b = (cls,txt) => `<span class="badge badge-${cls}">${txt}</span>`;
 const TRASH_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>`;
 
-function labBadge(type, val) {
+function labBadge(type, val, unit) {
   const r = S.labTypeMap[type]; if (!r) return '';
-  if (r.higher_better) return val >= (r.low||0) ? b('success','Good') : b('danger','Low');
-  if (r.low != null && val < r.low) return b('warning','Low');
-  if (r.normal_max != null && val <= r.normal_max) return b('success','Normal');
-  if (r.borderline_max != null && val <= r.borderline_max) return b('warning','Borderline');
+  const v = (type === 'glucose_hba1c' && unit === 'mmol/mol') ? hba1cToPercent(val) : val;
+  if (r.higher_better) return v >= (r.low||0) ? b('success','Good') : b('danger','Low');
+  if (r.low != null && v < r.low) return b('warning','Low');
+  if (r.normal_max != null && v <= r.normal_max) return b('success','Normal');
+  if (r.borderline_max != null && v <= r.borderline_max) return b('warning','Borderline');
   return b('danger','High');
 }
 
@@ -729,7 +738,7 @@ function renderOverview() {
           <td>${fmt(r.measured_at)}</td>
           <td>${S.labTypeMap[r.test_type]?.display_name??r.test_type}</td>
           <td><strong>${r.value} ${r.unit}</strong></td>
-          <td>${labBadge(r.test_type,r.value)}</td>
+          <td>${labBadge(r.test_type,r.value,r.unit)}</td>
         </tr>`).join('')}</tbody>
       </table></div>`;
 }
@@ -773,7 +782,7 @@ function renderLabs() {
       <td>${fmt(r.measured_at)}</td>
       <td>${S.labTypeMap[r.test_type]?.display_name??r.test_type}</td>
       <td><strong>${r.value} ${r.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''}${S.labTypeMap[r.test_type]?`<div class="ref-range">${refRangeText(S.labTypeMap[r.test_type],true)}</div>`:''}</td>
-      <td>${labBadge(r.test_type,r.value)}</td>
+      <td>${labBadge(r.test_type,r.value,r.unit)}</td>
       <td style="color:var(--text-secondary)">${r.lab_name??'—'}</td>
       ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
@@ -1181,6 +1190,17 @@ function onLabChartTypeChange() {
 /* ═══════════════════════════════════════════════════════════════════
    Lab unit / hint helper
 ══════════════════════════════════════════════════════════════════ */
+function hintForTypeAndUnit(t, unitVal) {
+  if (t.test_type === 'glucose_hba1c' && unitVal === 'mmol/mol') {
+    const toMmolMol = v => v != null ? Math.round((v - 2.152) / 0.09148) : null;
+    const lo = t.low != null ? `${toMmolMol(t.low)}–` : '';
+    const hi = t.normal_max != null && t.normal_max < 900 ? `${toMmolMol(t.normal_max)}` : '';
+    const bor = t.borderline_max != null && t.borderline_max < 900 ? ` · border ≤ ${toMmolMol(t.borderline_max)}` : '';
+    return `Normal: ${lo}${hi} mmol/mol${bor}`;
+  }
+  return refRangeText(t) || '';
+}
+
 function onTypeChange() {
   const t = S.labTypeMap[document.getElementById('lr_type').value];
   if (!t) return;
@@ -1189,11 +1209,20 @@ function onTypeChange() {
   const opts = UNIT_OPTIONS[t.test_type] || [t.unit];
   const unitSel = document.getElementById('lr_unit');
   unitSel.innerHTML = opts.map(u => `<option value="${u}">${u}</option>`).join('');
-  const preferred = S.prefs?.lab_unit === 'mmol' ? 'mmol/L' : 'mg/dL';
+  const wantsMmol = S.prefs?.lab_unit === 'mmol';
+  const preferred = t.test_type === 'glucose_hba1c'
+    ? (wantsMmol ? 'mmol/mol' : '%')
+    : (wantsMmol ? 'mmol/L' : 'mg/dL');
   unitSel.value = opts.includes(preferred) ? preferred : opts[0];
 
-  // Reference range hint — uses gender-adjusted values from S.labTypeMap
-  document.getElementById('lr_hint').textContent = refRangeText(t) || '';
+  document.getElementById('lr_hint').textContent = hintForTypeAndUnit(t, unitSel.value);
+}
+
+function onUnitChange() {
+  const t = S.labTypeMap[document.getElementById('lr_type').value];
+  if (!t) return;
+  const unitVal = document.getElementById('lr_unit').value;
+  document.getElementById('lr_hint').textContent = hintForTypeAndUnit(t, unitVal);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1274,7 +1303,7 @@ function renderRanges() {
         const l = latest[r.test_type];
         const hint = l ? labConvertedHint(l.test_type, l.value, l.unit, S.prefs?.lab_unit || 'mg_dl') : '';
         const latestCell = l
-          ? `<strong>${l.value} ${l.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''} ${labBadge(r.test_type, l.value)}`
+          ? `<strong>${l.value} ${l.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''} ${labBadge(r.test_type, l.value, l.unit)}`
           : '<span style="color:var(--text-hint)">—</span>';
         return `<tr>
           <td><strong>${r.display_name}</strong><br><span style="font-size:11px;color:var(--text-secondary)">${cat.label}</span></td>

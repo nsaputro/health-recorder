@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { labResults as api, userPrefs } from '../api/client'
-import { labConvertedHint } from '../utils/unitConversion'
+import { labConvertedHint, normalizeForBadge } from '../utils/unitConversion'
 import LabResultForm from '../components/forms/LabResultForm'
 import LabResultChart from '../components/charts/LabResultChart'
 import TrendSummary from '../components/charts/TrendSummary'
@@ -22,15 +22,16 @@ const LAB_COLORS: Record<string, string> = {
   hemoglobin:        '#ec4899',
 }
 
-function StatusBadge({ value, range: r }: { value: number; range?: LabReferenceRange }) {
+function StatusBadge({ value, unit, range: r }: { value: number; unit: string; range?: LabReferenceRange }) {
   if (!r) return null
+  const v = normalizeForBadge(r.test_type, value, unit)
   if (r.higher_better) {
-    if (value >= (r.low ?? 0)) return <span className="badge-success">Good</span>
+    if (v >= (r.low ?? 0)) return <span className="badge-success">Good</span>
     return <span className="badge-danger">Low</span>
   }
-  if (r.low != null && value < r.low) return <span className="badge-warning">Low</span>
-  if (value <= (r.normal_max ?? Infinity)) return <span className="badge-success">Normal</span>
-  if (value <= (r.borderline_max ?? Infinity)) return <span className="badge-warning">Borderline</span>
+  if (r.low != null && v < r.low) return <span className="badge-warning">Low</span>
+  if (v <= (r.normal_max ?? Infinity)) return <span className="badge-success">Normal</span>
+  if (v <= (r.borderline_max ?? Infinity)) return <span className="badge-warning">Borderline</span>
   return <span className="badge-danger">High</span>
 }
 
@@ -203,7 +204,7 @@ export default function LabResultsPage() {
                       )}
                     </td>
                     <td className="py-2 pr-3">
-                      <StatusBadge value={r.value} range={typeMap[r.test_type]} />
+                      <StatusBadge value={r.value} unit={r.unit} range={typeMap[r.test_type]} />
                     </td>
                     <td className="py-2 pr-3 text-gray-500 text-xs">{r.lab_name ?? '—'}</td>
                     <td className="py-2 pr-3">

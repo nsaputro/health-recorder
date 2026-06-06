@@ -288,6 +288,13 @@ status (success|error), records_synced, error_message, created_at
 - ✅ **Reference Ranges tab**: lab ranges displayed in preferred unit (converted from mg/dL); user's latest result also shows conversion hint
 - ✅ **Backend partial update**: `PUT /auth/preferences` now accepts any subset of `{gender, lab_unit, weight_unit}` — unchanged fields are preserved
 
+### Phase 3d — HbA1c mmol/mol Unit Support (v0.4.1)
+
+- ✅ **`mmol/mol` as selectable unit for HbA1c**: entry form now offers both `%` (DCCT) and `mmol/mol` (IFCC); form pre-selects `mmol/mol` when `lab_unit` preference is `mmol`
+- ✅ **HbA1c conversion hints in tables**: when stored in `mmol/mol`, shows `(X %)` hint; when stored in `%` and mmol preferred, shows `(X mmol/mol)` hint; uses affine formula `% = 0.09148 × mmol/mol + 2.152`
+- ✅ **HbA1c range hint in form**: reference range hint below the value field converts to `mmol/mol` when that unit is selected (Normal: 31–39 mmol/mol · Border: ≤ 47)
+- ✅ **HbA1c status badge fix**: Normal/Borderline/High badge normalises `mmol/mol` values to `%` before comparing against `%` reference ranges (both React frontend and HA addon)
+
 ### Phase 4 — Frontend Modernisation (v0.4.0) ✅
 
 Upgrade the standalone `frontend/` to the latest major versions. The HA addon's vanilla-JS UI
