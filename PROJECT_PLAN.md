@@ -277,6 +277,17 @@ status (success|error), records_synced, error_message, created_at
 - ✅ **Gender selector in Settings**: button-group picker in the Settings panel of both UIs; saves preference immediately and reloads all lab-type data with the new gender
 - ✅ **Ref-range sub-line in lab table**: each result row shows a small "Normal: X–Y unit" hint below the result value in both UIs
 
+### Phase 3c — Unit Preference Settings (v0.4.0) ✅
+
+- ✅ **`lab_unit` preference**: `mg_dl` | `mmol` — stored in `user_preferences`; applies to cholesterol, triglycerides, glucose, and uric acid; HbA1c / creatinine / hemoglobin unaffected
+- ✅ **`weight_unit` preference**: `kg` | `lb` — display-only (stored values always in kg)
+- ✅ **Conversion hint in tables**: when stored unit differs from preferred unit, both values shown (e.g. `200 mg/dL (5.17 mmol/L)`)
+- ✅ **Unit picker in Settings**: "Display Units" card with button-group pickers for lab unit and weight unit; immediate save, works in both UIs
+- ✅ **Form defaults to preferred unit**: lab entry form unit dropdown pre-selects the preferred unit (mg/dL or mmol/L) when a test type is chosen
+- ✅ **Live lb hint in weight form**: weight entry shows live kg → lb conversion hint when `lb` is preferred
+- ✅ **Reference Ranges tab**: lab ranges displayed in preferred unit (converted from mg/dL); user's latest result also shows conversion hint
+- ✅ **Backend partial update**: `PUT /auth/preferences` now accepts any subset of `{gender, lab_unit, weight_unit}` — unchanged fields are preserved
+
 ### Phase 4 — Frontend Modernisation (v0.4.0) ✅
 
 Upgrade the standalone `frontend/` to the latest major versions. The HA addon's vanilla-JS UI

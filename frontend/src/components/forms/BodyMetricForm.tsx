@@ -1,20 +1,24 @@
 import { useForm } from 'react-hook-form'
 import { format } from 'date-fns'
 import type { BodyMetricCreate } from '../../types/health'
+import { kgToLb } from '../../utils/unitConversion'
 
 interface Props {
   onSubmit: (data: BodyMetricCreate) => Promise<void>
   defaultValues?: Partial<BodyMetricCreate>
   loading?: boolean
+  weightUnit?: 'kg' | 'lb'
 }
 
-export default function BodyMetricForm({ onSubmit, defaultValues, loading }: Props) {
-  const { register, handleSubmit, formState: { errors } } = useForm<BodyMetricCreate>({
+export default function BodyMetricForm({ onSubmit, defaultValues, loading, weightUnit }: Props) {
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<BodyMetricCreate>({
     defaultValues: {
       measured_at: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       ...defaultValues,
     },
   })
+
+  const watchedWeight = watch('weight_kg')
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -40,6 +44,9 @@ export default function BodyMetricForm({ onSubmit, defaultValues, loading }: Pro
             {...register('weight_kg', { required: 'Required', valueAsNumber: true, min: { value: 1, message: 'Must be positive' } })}
           />
           {errors.weight_kg && <p className="text-red-500 text-xs mt-1">{errors.weight_kg.message}</p>}
+          {weightUnit === 'lb' && watchedWeight > 0 && (
+            <p className="text-xs text-gray-400 mt-1">= {kgToLb(watchedWeight)} lb</p>
+          )}
         </div>
         <div>
           <label className="label">Height (cm) <span className="text-gray-400 font-normal">optional</span></label>

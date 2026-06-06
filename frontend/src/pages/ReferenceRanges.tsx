@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { labResults as labApi, userPrefs } from '../api/client'
 import type { LabReferenceRange, LabResult } from '../types/health'
+import { convertRangeToMmol, labConvertedHint } from '../utils/unitConversion'
 
 const CATEGORIES: { label: string; types: string[] }[] = [
   { label: 'Lipids',    types: ['cholesterol_total', 'cholesterol_ldl', 'cholesterol_hdl', 'triglycerides'] },
@@ -42,7 +43,11 @@ export default function ReferenceRangesPage() {
     queryFn: () => labApi.list({ limit: 500 }),
   })
 
-  const typeMap = Object.fromEntries(labTypes.map((t) => [t.test_type, t]))
+  const wantsMmol = prefs?.lab_unit === 'mmol'
+  const resolvedTypes = wantsMmol
+    ? labTypes.map((t) => convertRangeToMmol(t, t.test_type))
+    : labTypes
+  const typeMap = Object.fromEntries(resolvedTypes.map((t) => [t.test_type, t]))
 
   // Latest result per test type
   const latestByType = allResults.reduce<Record<string, LabResult>>((acc, r) => {
@@ -88,13 +93,19 @@ export default function ReferenceRangesPage() {
                           <td className="py-2.5 pr-6 text-gray-600">{refRangeText(r)}</td>
                           <td className="py-2.5 pr-6">
                             {latest ? (
-                              <span className="font-semibold">{latest.value} {latest.unit}</span>
+                              <span className="font-semibold">
+                                {latest.value} {latest.unit}
+                                {prefs?.lab_unit && (() => {
+                                  const hint = labConvertedHint(latest.test_type, latest.value, latest.unit, prefs.lab_unit)
+                                  return hint ? <span className="text-gray-400 font-normal ml-1 text-xs">{hint}</span> : null
+                                })()}
+                              </span>
                             ) : (
                               <span className="text-gray-400">—</span>
                             )}
                           </td>
                           <td className="py-2.5">
-                            {latest ? <StatusBadge value={latest.value} range={r} /> : null}
+                            {latest ? <StatusBadge value={latest.value} range={typeMap[r.test_type]} /> : null}
                           </td>
                         </tr>
                       )

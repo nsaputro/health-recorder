@@ -50,8 +50,8 @@ export default function SettingsPage() {
             {(['unset', 'male', 'female'] as UserPreference['gender'][]).map((g) => (
               <button
                 key={g}
-                onClick={() => prefsMutation.mutate({ gender: g })}
-                disabled={prefsMutation.isPending}
+                onClick={() => prefsMutation.mutate({ ...prefs!, gender: g })}
+                disabled={prefsMutation.isPending || !prefs}
                 className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
                   prefs?.gender === g
                     ? 'bg-blue-600 text-white border-blue-600'
@@ -65,6 +65,54 @@ export default function SettingsPage() {
           {prefsMutation.isSuccess && (
             <p className="text-xs text-green-600 mt-1">Saved</p>
           )}
+        </div>
+      </div>
+
+      {/* Display Units */}
+      <div className="card space-y-4">
+        <h2 className="text-base font-semibold">Display Units</h2>
+
+        <div>
+          <label className="label">
+            Lab Results <span className="text-gray-400 font-normal">(cholesterol, glucose, uric acid)</span>
+          </label>
+          <div className="flex gap-2 mt-1">
+            {(['mg_dl', 'mmol'] as UserPreference['lab_unit'][]).map((u) => (
+              <button
+                key={u}
+                onClick={() => prefsMutation.mutate({ ...prefs!, lab_unit: u })}
+                disabled={prefsMutation.isPending || !prefs}
+                className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                  prefs?.lab_unit === u
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {u === 'mg_dl' ? 'mg/dL' : 'mmol/L'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Weight</label>
+          <div className="flex gap-2 mt-1">
+            {(['kg', 'lb'] as UserPreference['weight_unit'][]).map((u) => (
+              <button
+                key={u}
+                onClick={() => prefsMutation.mutate({ ...prefs!, weight_unit: u })}
+                disabled={prefsMutation.isPending || !prefs}
+                className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                  prefs?.weight_unit === u
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+          {prefsMutation.isSuccess && <p className="text-xs text-green-600 mt-1">Saved</p>}
         </div>
       </div>
 

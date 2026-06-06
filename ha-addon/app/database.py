@@ -41,6 +41,8 @@ def _migrate(engine):
         "ALTER TABLE vital_signs        ADD COLUMN ha_user_id TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE google_credentials ADD COLUMN ha_user_id TEXT NOT NULL DEFAULT ''",
         "CREATE TABLE IF NOT EXISTS user_preferences (id INTEGER PRIMARY KEY, ha_user_id TEXT NOT NULL DEFAULT '', gender TEXT NOT NULL DEFAULT 'unset', created_at DATETIME, updated_at DATETIME)",
+        "ALTER TABLE user_preferences ADD COLUMN lab_unit TEXT NOT NULL DEFAULT 'mg_dl'",
+        "ALTER TABLE user_preferences ADD COLUMN weight_unit TEXT NOT NULL DEFAULT 'kg'",
     ]
     with engine.connect() as conn:
         for sql in migrations:

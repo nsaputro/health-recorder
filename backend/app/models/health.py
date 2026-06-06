@@ -100,5 +100,7 @@ class UserPreferences(Base):
 
     id = Column(Integer, primary_key=True)
     gender = Column(String(16), nullable=False, server_default="unset")  # "male"|"female"|"unset"
+    lab_unit = Column(String(16), nullable=False, server_default="mg_dl")  # "mg_dl"|"mmol"
+    weight_unit = Column(String(8), nullable=False, server_default="kg")   # "kg"|"lb"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

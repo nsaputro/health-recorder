@@ -70,7 +70,9 @@ export interface LabReferenceRange {
 }
 
 export interface UserPreference {
-  gender: 'male' | 'female' | 'unset'
+  gender:      'male' | 'female' | 'unset'
+  lab_unit:    'mg_dl' | 'mmol'
+  weight_unit: 'kg' | 'lb'
 }
 
 export interface GoogleCredential {
