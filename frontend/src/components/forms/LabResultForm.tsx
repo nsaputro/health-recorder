@@ -13,7 +13,7 @@ const UNIT_OPTIONS: Record<string, string[]> = {
   glucose_fasting:   ['mg/dL', 'mmol/L'],
   glucose_random:    ['mg/dL', 'mmol/L'],
   uric_acid:         ['mg/dL', 'mmol/L'],
-  glucose_hba1c:     ['%'],
+  glucose_hba1c:     ['%', 'mmol/mol'],
   creatinine:        ['mg/dL', 'µmol/L'],
   hemoglobin:        ['g/dL', 'g/L'],
   other:             ['units'],
@@ -26,7 +26,14 @@ interface Props {
   labUnit?: 'mg_dl' | 'mmol'
 }
 
-function hintText(r: LabReferenceRange): string {
+function hintText(r: LabReferenceRange, currentUnit?: string): string {
+  if (r.test_type === 'glucose_hba1c' && currentUnit === 'mmol/mol') {
+    const toMmolMol = (v: number) => Math.round((v - 2.152) / 0.09148)
+    const lo = r.low != null ? `${toMmolMol(r.low)}–` : ''
+    const hi = r.normal_max != null && r.normal_max < 900 ? `${toMmolMol(r.normal_max)}` : ''
+    const bor = r.borderline_max != null && r.borderline_max < 900 ? ` · Border: ≤ ${toMmolMol(r.borderline_max)}` : ''
+    return `Normal: ${lo}${hi} mmol/mol${bor}`
+  }
   if (r.higher_better) return `Good: ≥ ${r.low} ${r.unit}`
   const lo = r.low != null ? `${r.low}–` : ''
   const hi = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : ''
@@ -53,12 +60,18 @@ export default function LabResultForm({ onSubmit, defaultValues, loading, labUni
   })
 
   const selectedType = watch('test_type')
+  const selectedUnit = watch('unit')
   const typeInfo = labTypes.find((t) => t.test_type === selectedType)
   const unitOptions = UNIT_OPTIONS[selectedType] ?? ['units']
 
   // Pre-select preferred unit whenever the test type changes
   useEffect(() => {
-    const preferred = effectiveLabUnit === 'mmol' ? 'mmol/L' : 'mg/dL'
+    let preferred: string
+    if (selectedType === 'glucose_hba1c') {
+      preferred = effectiveLabUnit === 'mmol' ? 'mmol/mol' : '%'
+    } else {
+      preferred = effectiveLabUnit === 'mmol' ? 'mmol/L' : 'mg/dL'
+    }
     const best = unitOptions.includes(preferred) ? preferred : unitOptions[0]
     setValue('unit', best)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,7 +113,7 @@ export default function LabResultForm({ onSubmit, defaultValues, loading, labUni
           />
           {errors.value && <p className="text-red-500 text-xs mt-1">{errors.value.message}</p>}
           {typeInfo && (
-            <p className="text-xs text-gray-400 mt-1">{hintText(typeInfo)}</p>
+            <p className="text-xs text-gray-400 mt-1">{hintText(typeInfo, selectedUnit)}</p>
           )}
         </div>
         <div>

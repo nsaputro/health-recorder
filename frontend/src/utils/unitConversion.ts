@@ -20,12 +20,33 @@ export function mmolToMgdl(testType: string, mmol: number): number | null {
   return f != null ? Math.round((mmol / f) * 10) / 10 : null
 }
 
+// HbA1c uses an affine formula, not a simple multiplication factor
+export function hba1cToPercent(mmolMol: number): number {
+  return Math.round((0.09148 * mmolMol + 2.152) * 10) / 10
+}
+
+export function hba1cToMmolMol(percent: number): number {
+  return Math.round((percent - 2.152) / 0.09148)
+}
+
+// Normalize a lab value to the unit used in reference ranges (always % for HbA1c)
+export function normalizeForBadge(testType: string, value: number, unit: string): number {
+  if (testType === 'glucose_hba1c' && unit === 'mmol/mol') return hba1cToPercent(value)
+  return value
+}
+
 export function labConvertedHint(
   testType: string,
   value: number,
   storedUnit: string,
   prefUnit: 'mg_dl' | 'mmol',
 ): string {
+  // HbA1c uses an affine conversion — handled independently of the mmol/L preference
+  if (testType === 'glucose_hba1c') {
+    if (storedUnit === 'mmol/mol' && prefUnit === 'mg_dl') return `(${hba1cToPercent(value)} %)`
+    if (storedUnit === '%' && prefUnit === 'mmol') return `(${hba1cToMmolMol(value)} mmol/mol)`
+    return ''
+  }
   const wantsMgdl = prefUnit === 'mg_dl'
   const storedIsMgdl = storedUnit === 'mg/dL'
   if (wantsMgdl === storedIsMgdl) return ''

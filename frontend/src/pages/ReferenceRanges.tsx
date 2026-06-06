@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { labResults as labApi, userPrefs } from '../api/client'
 import type { LabReferenceRange, LabResult } from '../types/health'
-import { convertRangeToMmol, labConvertedHint } from '../utils/unitConversion'
+import { convertRangeToMmol, labConvertedHint, normalizeForBadge } from '../utils/unitConversion'
 
 const CATEGORIES: { label: string; types: string[] }[] = [
   { label: 'Lipids',    types: ['cholesterol_total', 'cholesterol_ldl', 'cholesterol_hdl', 'triglycerides'] },
@@ -18,14 +18,15 @@ function refRangeText(r: LabReferenceRange): string {
   return `${lo}${hi} ${r.unit}${bor}`
 }
 
-function StatusBadge({ value, range: r }: { value: number; range: LabReferenceRange }) {
+function StatusBadge({ value, unit, range: r }: { value: number; unit: string; range: LabReferenceRange }) {
+  const v = normalizeForBadge(r.test_type, value, unit)
   if (r.higher_better) {
-    if (value >= (r.low ?? 0)) return <span className="badge-success">Good</span>
+    if (v >= (r.low ?? 0)) return <span className="badge-success">Good</span>
     return <span className="badge-danger">Low</span>
   }
-  if (r.low != null && value < r.low) return <span className="badge-warning">Low</span>
-  if (value <= (r.normal_max ?? Infinity)) return <span className="badge-success">Normal</span>
-  if (value <= (r.borderline_max ?? Infinity)) return <span className="badge-warning">Borderline</span>
+  if (r.low != null && v < r.low) return <span className="badge-warning">Low</span>
+  if (v <= (r.normal_max ?? Infinity)) return <span className="badge-success">Normal</span>
+  if (v <= (r.borderline_max ?? Infinity)) return <span className="badge-warning">Borderline</span>
   return <span className="badge-danger">High</span>
 }
 
@@ -105,7 +106,7 @@ export default function ReferenceRangesPage() {
                             )}
                           </td>
                           <td className="py-2.5">
-                            {latest ? <StatusBadge value={latest.value} range={typeMap[r.test_type]} /> : null}
+                            {latest ? <StatusBadge value={latest.value} unit={latest.unit} range={typeMap[r.test_type]} /> : null}
                           </td>
                         </tr>
                       )
