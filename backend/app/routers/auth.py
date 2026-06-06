@@ -54,17 +54,39 @@ def google_disconnect(db: Session = Depends(get_db)):
 @router.get("/preferences", response_model=UserPreferenceRead)
 def get_preferences(db: Session = Depends(get_db)):
     prefs = db.query(UserPreferences).filter_by(id=1).first()
-    return UserPreferenceRead(gender=prefs.gender if prefs else "unset")
+    return UserPreferenceRead(
+        gender=prefs.gender if prefs else "unset",
+        lab_unit=prefs.lab_unit if prefs else "mg_dl",
+        weight_unit=prefs.weight_unit if prefs else "kg",
+    )
+
+
+_VALID_PREFS = {
+    "gender":      {"male", "female", "unset"},
+    "lab_unit":    {"mg_dl", "mmol"},
+    "weight_unit": {"kg", "lb"},
+}
 
 
 @router.put("/preferences", response_model=UserPreferenceRead)
 def update_preferences(data: UserPreferenceUpdate, db: Session = Depends(get_db)):
-    if data.gender not in ("male", "female", "unset"):
-        raise HTTPException(status_code=422, detail="gender must be male, female, or unset")
+    for field, allowed in _VALID_PREFS.items():
+        val = getattr(data, field, None)
+        if val is not None and val not in allowed:
+            raise HTTPException(status_code=422, detail=f"{field} must be one of {sorted(allowed)}")
     prefs = db.query(UserPreferences).filter_by(id=1).first()
-    if prefs:
+    if not prefs:
+        prefs = UserPreferences(id=1)
+        db.add(prefs)
+    if data.gender is not None:
         prefs.gender = data.gender
-    else:
-        db.add(UserPreferences(id=1, gender=data.gender))
+    if data.lab_unit is not None:
+        prefs.lab_unit = data.lab_unit
+    if data.weight_unit is not None:
+        prefs.weight_unit = data.weight_unit
     db.commit()
-    return UserPreferenceRead(gender=data.gender)
+    return UserPreferenceRead(
+        gender=prefs.gender,
+        lab_unit=prefs.lab_unit,
+        weight_unit=prefs.weight_unit,
+    )

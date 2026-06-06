@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
-import { bodyMetrics as api } from '../api/client'
+import { bodyMetrics as api, userPrefs } from '../api/client'
+import { kgToLb } from '../utils/unitConversion'
 import BodyMetricForm from '../components/forms/BodyMetricForm'
 import WeightChart from '../components/charts/WeightChart'
 import TrendSummary from '../components/charts/TrendSummary'
@@ -24,6 +25,8 @@ export default function BodyMetricsPage() {
     queryKey: ['body-metrics', range.months],
     queryFn: () => api.list({ limit: 500, since: sinceFromRange(range.months) }),
   })
+
+  const { data: prefs } = useQuery({ queryKey: ['user-prefs'], queryFn: userPrefs.get, retry: false })
 
   const createMutation = useMutation({
     mutationFn: api.create,
@@ -81,6 +84,7 @@ export default function BodyMetricsPage() {
             defaultValues={{ height_cm: latestHeight }}
             onSubmit={handleCreate}
             loading={createMutation.isPending}
+            weightUnit={prefs?.weight_unit}
           />
           {createMutation.isError && (
             <p className="text-red-500 text-sm mt-2">Error saving entry.</p>
@@ -146,7 +150,12 @@ export default function BodyMetricsPage() {
                     <td className="py-2 pr-3 pl-6 text-gray-600">
                       {format(parseISO(r.measured_at), 'MMM d, yyyy HH:mm')}
                     </td>
-                    <td className="py-2 pr-3 font-semibold">{r.weight_kg} kg</td>
+                    <td className="py-2 pr-3 font-semibold">
+                      {r.weight_kg} kg
+                      {prefs?.weight_unit === 'lb' && (
+                        <span className="text-gray-400 font-normal ml-1 text-xs">({kgToLb(r.weight_kg)} lb)</span>
+                      )}
+                    </td>
                     <td className="py-2 pr-3 text-gray-600">{r.height_cm ? `${r.height_cm} cm` : '—'}</td>
                     <td className="py-2 pr-3">
                       {r.bmi ? (

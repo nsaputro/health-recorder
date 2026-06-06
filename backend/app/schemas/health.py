@@ -212,8 +212,12 @@ class LabReferenceRange(BaseModel):
 # ── User Preferences ─────────────────────────────────────────────────────────
 
 class UserPreferenceRead(BaseModel):
-    gender: str  # "male" | "female" | "unset"
+    gender:      str = "unset"   # "male"|"female"|"unset"
+    lab_unit:    str = "mg_dl"   # "mg_dl"|"mmol"
+    weight_unit: str = "kg"      # "kg"|"lb"
 
 
 class UserPreferenceUpdate(BaseModel):
-    gender: str  # validated in endpoint: must be male, female, or unset
+    gender:      Optional[str] = None
+    lab_unit:    Optional[str] = None
+    weight_unit: Optional[str] = None

@@ -37,6 +37,8 @@ def _migrate(engine):
     from sqlalchemy import text
     migrations = [
         "CREATE TABLE IF NOT EXISTS user_preferences (id INTEGER PRIMARY KEY, gender TEXT NOT NULL DEFAULT 'unset', created_at DATETIME, updated_at DATETIME)",
+        "ALTER TABLE user_preferences ADD COLUMN lab_unit TEXT NOT NULL DEFAULT 'mg_dl'",
+        "ALTER TABLE user_preferences ADD COLUMN weight_unit TEXT NOT NULL DEFAULT 'kg'",
     ]
     with engine.connect() as conn:
         for sql in migrations:

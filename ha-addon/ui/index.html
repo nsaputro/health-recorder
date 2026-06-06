@@ -247,7 +247,7 @@ tr:hover td{background:var(--hover-bg)}
       <form id="bmFrm">
         <div class="fg"><label>Measured At</label><input type="datetime-local" id="bm_at" required></div>
         <div class="row2">
-          <div class="fg"><label>Weight (kg)</label><input type="number" step=".1" min="1" id="bm_wt" placeholder="e.g. 72.5" required></div>
+          <div class="fg"><label>Weight (kg)</label><input type="number" step=".1" min="1" id="bm_wt" placeholder="e.g. 72.5" required oninput="updateWtHint(this.value)"><span id="bm_wt_hint" class="hint"></span></div>
           <div class="fg"><label>Height (cm) <em>optional</em></label><input type="number" step=".1" min="1" id="bm_ht" placeholder="e.g. 170"></div>
         </div>
         <div class="fg"><label>Notes <em>optional</em></label><textarea id="bm_notes" placeholder="Any context…"></textarea></div>
@@ -418,6 +418,24 @@ tr:hover td{background:var(--hover-bg)}
     </div>
   </div>
   <div class="card">
+    <div class="card-title">Display Units</div>
+    <div class="fg">
+      <span class="fg-label">Lab Results <em>(cholesterol, glucose, uric acid)</em></span>
+      <div class="gender-pick">
+        <button class="gpick-btn" data-upref="lab_unit" data-uval="mg_dl" onclick="setUnitPref('lab_unit','mg_dl')">mg/dL</button>
+        <button class="gpick-btn" data-upref="lab_unit" data-uval="mmol" onclick="setUnitPref('lab_unit','mmol')">mmol/L</button>
+      </div>
+    </div>
+    <div class="fg">
+      <span class="fg-label">Weight</span>
+      <div class="gender-pick">
+        <button class="gpick-btn" data-upref="weight_unit" data-uval="kg" onclick="setUnitPref('weight_unit','kg')">kg</button>
+        <button class="gpick-btn" data-upref="weight_unit" data-uval="lb" onclick="setUnitPref('weight_unit','lb')">lb</button>
+      </div>
+      <span id="unitSaved" class="save-msg"></span>
+    </div>
+  </div>
+  <div class="card">
     <div class="card-title">Google Integration</div>
     <div id="gSection"></div>
   </div>
@@ -446,7 +464,7 @@ const S = {
   weights: [], labs: [], vitals: [],
   labTypes: [], labTypeMap: {},
   google: null,
-  prefs: { gender: 'unset' },
+  prefs: { gender: 'unset', lab_unit: 'mg_dl', weight_unit: 'kg' },
   activeTab: 'overview',
   range: 3,        // active time-range in months (0 = all)
   activeLab: '',   // test type selected for lab chart
@@ -469,6 +487,38 @@ const UNIT_OPTIONS = {
   other:             ['mg/dL', 'mmol/L', 'g/dL', 'g/L', '%', 'units'],
 };
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   Unit conversion helpers
+══════════════════════════════════════════════════════════════════ */
+const MMOL_FACTORS = {
+  cholesterol_total: 0.02586, cholesterol_ldl: 0.02586,
+  cholesterol_hdl:   0.02586, triglycerides:   0.01129,
+  glucose_fasting:   0.05551, glucose_random:  0.05551,
+  uric_acid:         0.05948,
+};
+
+function labConvertedHint(testType, value, storedUnit, prefUnit) {
+  const wantsMgdl  = prefUnit === 'mg_dl';
+  const storedIsMgdl = storedUnit === 'mg/dL';
+  if (wantsMgdl === storedIsMgdl) return '';
+  const f = MMOL_FACTORS[testType];
+  if (!f) return '';
+  if (wantsMgdl) return `(${Math.round(value / f * 10) / 10} mg/dL)`;
+  return `(${Math.round(value * f * 100) / 100} mmol/L)`;
+}
+
+function weightHint(kg) {
+  if (S.prefs?.weight_unit !== 'lb') return '';
+  return `(${Math.round(kg * 2.20462 * 10) / 10} lb)`;
+}
+
+function resolvedRange(r) {
+  if (S.prefs?.lab_unit !== 'mmol' || !MMOL_FACTORS[r.test_type]) return r;
+  const f = MMOL_FACTORS[r.test_type];
+  const c = v => (v != null && v < 900) ? Math.round(v * f * 100) / 100 : v;
+  return { ...r, unit: 'mmol/L', low: c(r.low), normal_max: c(r.normal_max), borderline_max: c(r.borderline_max) };
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    Utilities
@@ -583,10 +633,16 @@ async function loadAll() {
 }
 
 async function loadPreferences() {
-  try { S.prefs = await req('GET', 'auth/preferences'); } catch { S.prefs = { gender: 'unset' }; }
+  try { S.prefs = await req('GET', 'auth/preferences'); } catch { S.prefs = { gender: 'unset', lab_unit: 'mg_dl', weight_unit: 'kg' }; }
   // Sync gender picker buttons
   document.querySelectorAll('.gpick-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.g === S.prefs.gender);
+  });
+  // Sync unit picker buttons
+  ['lab_unit', 'weight_unit'].forEach(field => {
+    document.querySelectorAll(`[data-upref="${field}"]`).forEach(btn =>
+      btn.classList.toggle('active', btn.dataset.uval === S.prefs[field])
+    );
   });
 }
 
@@ -687,16 +743,16 @@ function renderWeights() {
   const ss = !!S.google;
   el.innerHTML = `<div class="tbl-bleed"><table>
     <thead><tr><th>Date/Time</th><th>Weight</th><th>BMI</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
-    <tbody>${S.weights.map(r=>`<tr>
+    <tbody>${S.weights.map(r=>{const wh=weightHint(r.weight_kg);return`<tr>
       <td>${fmtDT(r.measured_at)}</td>
-      <td><strong>${r.weight_kg} kg</strong></td>
+      <td><strong>${r.weight_kg} kg</strong>${wh?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${wh}</span>`:''}</td>
       <td>${r.bmi ? r.bmi+' '+bmiBadge(r.bmi) : '—'}</td>
       ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
         ${ss?`<button onclick="syncRec('body-metrics',${r.id})">Sync</button>`:''}
         <button class="icon-btn" title="Delete" onclick="delRec('body-metrics',${r.id})">${TRASH_ICON}</button>
       </div></td>
-    </tr>`).join('')}</tbody>
+    </tr>`}).join('')}</tbody>
   </table></div>`;
 }
 
@@ -711,10 +767,12 @@ function renderLabs() {
   const ss = !!S.google;
   el.innerHTML = `<div class="tbl-bleed"><table>
     <thead><tr><th>Date</th><th>Test</th><th>Result</th><th>Status</th><th>Lab</th>${ss?'<th>Sync</th>':''}<th>Actions</th></tr></thead>
-    <tbody>${rows.map(r=>`<tr>
+    <tbody>${rows.map(r=>{
+      const hint = labConvertedHint(r.test_type, r.value, r.unit, S.prefs?.lab_unit || 'mg_dl');
+      return`<tr>
       <td>${fmt(r.measured_at)}</td>
       <td>${S.labTypeMap[r.test_type]?.display_name??r.test_type}</td>
-      <td><strong>${r.value} ${r.unit}</strong>${S.labTypeMap[r.test_type]?`<div class="ref-range">${refRangeText(S.labTypeMap[r.test_type],true)}</div>`:''}</td>
+      <td><strong>${r.value} ${r.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''}${S.labTypeMap[r.test_type]?`<div class="ref-range">${refRangeText(S.labTypeMap[r.test_type],true)}</div>`:''}</td>
       <td>${labBadge(r.test_type,r.value)}</td>
       <td style="color:var(--text-secondary)">${r.lab_name??'—'}</td>
       ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
@@ -722,7 +780,7 @@ function renderLabs() {
         ${ss?`<button onclick="syncRec('lab-results',${r.id})">Sync</button>`:''}
         <button class="icon-btn" title="Delete" onclick="delRec('lab-results',${r.id})">${TRASH_ICON}</button>
       </div></td>
-    </tr>`).join('')}</tbody>
+    </tr>`;}).join('')}</tbody>
   </table></div>`;
 }
 
@@ -806,6 +864,16 @@ function renderGoogle() {
 function prefillHeight() {
   const latest = (S.weights||[]).find(w => w.height_cm != null);
   if (latest) document.getElementById('bm_ht').value = latest.height_cm;
+}
+
+function updateWtHint(val) {
+  const hint = document.getElementById('bm_wt_hint');
+  if (!hint) return;
+  if (S.prefs?.weight_unit === 'lb' && val) {
+    hint.textContent = `= ${Math.round(parseFloat(val) * 2.20462 * 10) / 10} lb`;
+  } else {
+    hint.textContent = '';
+  }
 }
 
 document.getElementById('bmFrm').addEventListener('submit', async e => {
@@ -1117,11 +1185,12 @@ function onTypeChange() {
   const t = S.labTypeMap[document.getElementById('lr_type').value];
   if (!t) return;
 
-  // Populate unit dropdown; mg/dL is first (preferred) for most types
+  // Populate unit dropdown, pre-selecting the preferred unit if available
   const opts = UNIT_OPTIONS[t.test_type] || [t.unit];
   const unitSel = document.getElementById('lr_unit');
   unitSel.innerHTML = opts.map(u => `<option value="${u}">${u}</option>`).join('');
-  unitSel.value = opts[0]; // default = first option (mg/dL preferred)
+  const preferred = S.prefs?.lab_unit === 'mmol' ? 'mmol/L' : 'mg/dL';
+  unitSel.value = opts.includes(preferred) ? preferred : opts[0];
 
   // Reference range hint — uses gender-adjusted values from S.labTypeMap
   document.getElementById('lr_hint').textContent = refRangeText(t) || '';
@@ -1133,7 +1202,7 @@ function onTypeChange() {
 async function setGender(g) {
   try {
     await req('PUT', 'auth/preferences', { gender: g });
-    S.prefs = { gender: g };
+    S.prefs = { ...S.prefs, gender: g };
     document.querySelectorAll('.gpick-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.g === g);
     });
@@ -1156,6 +1225,22 @@ async function setGender(g) {
     renderOverview();
     if (S.activeTab === 'ranges') renderRanges();
   } catch(e) { alert('Failed to save gender: ' + e.message); }
+}
+
+async function setUnitPref(field, value) {
+  try {
+    await req('PUT', 'auth/preferences', { [field]: value });
+    S.prefs = { ...S.prefs, [field]: value };
+    document.querySelectorAll(`[data-upref="${field}"]`).forEach(btn =>
+      btn.classList.toggle('active', btn.dataset.uval === value)
+    );
+    const saved = document.getElementById('unitSaved');
+    saved.textContent = 'Saved';
+    setTimeout(() => { saved.textContent = ''; }, 2000);
+    renderWeights(); renderLabs();
+    if (S.activeTab === 'ranges') renderRanges();
+    if (field === 'lab_unit') onTypeChange();
+  } catch(e) { alert('Failed to save: ' + e.message); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1185,13 +1270,15 @@ function renderRanges() {
       .map(t => S.labTypeMap[t])
       .filter(Boolean)
       .map(r => {
+        const rr = resolvedRange(r);
         const l = latest[r.test_type];
+        const hint = l ? labConvertedHint(l.test_type, l.value, l.unit, S.prefs?.lab_unit || 'mg_dl') : '';
         const latestCell = l
-          ? `<strong>${l.value} ${l.unit}</strong> ${labBadge(r.test_type, l.value)}`
+          ? `<strong>${l.value} ${l.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''} ${labBadge(r.test_type, l.value)}`
           : '<span style="color:var(--text-hint)">—</span>';
         return `<tr>
           <td><strong>${r.display_name}</strong><br><span style="font-size:11px;color:var(--text-secondary)">${cat.label}</span></td>
-          <td style="color:var(--text-secondary)">${refRangeText(r)}</td>
+          <td style="color:var(--text-secondary)">${refRangeText(rr)}</td>
           <td>${latestCell}</td>
         </tr>`;
       });

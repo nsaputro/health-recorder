@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { labResults as api, userPrefs } from '../api/client'
+import { labConvertedHint } from '../utils/unitConversion'
 import LabResultForm from '../components/forms/LabResultForm'
 import LabResultChart from '../components/charts/LabResultChart'
 import TrendSummary from '../components/charts/TrendSummary'
@@ -116,7 +117,7 @@ export default function LabResultsPage() {
       {showForm && (
         <div className="card max-w-lg">
           <h2 className="text-base font-semibold mb-4">Add Lab Result</h2>
-          <LabResultForm onSubmit={handleCreate} loading={createMutation.isPending} />
+          <LabResultForm onSubmit={handleCreate} loading={createMutation.isPending} labUnit={prefs?.lab_unit} />
         </div>
       )}
 
@@ -190,7 +191,13 @@ export default function LabResultsPage() {
                     <td className="py-2 pr-3 pl-6 text-gray-600">{format(parseISO(r.measured_at), 'MMM d, yyyy')}</td>
                     <td className="py-2 pr-3 font-medium">{typeMap[r.test_type]?.display_name ?? r.test_type}</td>
                     <td className="py-2 pr-3">
-                      <span className="font-semibold">{r.value} {r.unit}</span>
+                      <span className="font-semibold">
+                        {r.value} {r.unit}
+                        {prefs?.lab_unit && (() => {
+                          const hint = labConvertedHint(r.test_type, r.value, r.unit, prefs.lab_unit)
+                          return hint ? <span className="text-gray-400 font-normal ml-1 text-xs">{hint}</span> : null
+                        })()}
+                      </span>
                       {typeMap[r.test_type] && (
                         <div className="text-xs text-gray-400 mt-0.5">{refRangeText(typeMap[r.test_type], true)}</div>
                       )}

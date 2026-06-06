@@ -62,7 +62,7 @@ export const googleAuth = {
 // ── User Preferences ──────────────────────────────────────────────────────────
 export const userPrefs = {
   get:    () => http.get<UserPreference>('/auth/preferences').then((r) => r.data),
-  update: (data: UserPreference) => http.put<UserPreference>('/auth/preferences', data).then((r) => r.data),
+  update: (data: Partial<UserPreference>) => http.put<UserPreference>('/auth/preferences', data).then((r) => r.data),
 }
 
 // ── Sync All ───────────────────────────────────────────────────────────────────
