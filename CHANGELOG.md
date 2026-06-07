@@ -8,6 +8,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-06-07
+
 ### Changed
 - **Google Fit removed; Google Health API v4 adopted**: all Google Fit integration has been
   removed. Weight, heart rate, and blood glucose are now synced via the **Google Health API v4**
@@ -221,7 +223,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/nsaputro/health-recorder/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/nsaputro/health-recorder/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/nsaputro/health-recorder/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/nsaputro/health-recorder/compare/v0.4.0...v0.4.1
