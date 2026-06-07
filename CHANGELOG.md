@@ -8,6 +8,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-06-07
+
 ### Added
 - **ALT and ALP liver function tests**: new lab test types `alt` (ALT, U/L) and `alp` (ALP, U/L)
   with reference ranges (ALT normal 7–56 U/L, female ≤45; ALP normal 44–147 U/L) and a new
@@ -205,7 +207,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/nsaputro/health-recorder/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/nsaputro/health-recorder/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/nsaputro/health-recorder/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/nsaputro/health-recorder/compare/v0.3.3...v0.4.0
