@@ -19,7 +19,7 @@ const UNIT_OPTIONS: Record<string, string[]> = {
   alt:               ['U/L'],
   alp:               ['U/L'],
   egfr:              ['mL/min/1.73m²'],
-  albumin:           ['g/dL', 'g/L', 'mg/L'],
+  albumin:           ['mg/L', 'mg/24h'],
   urine_creatinine:  ['mg/dL', 'mmol/L'],
   vitamin_d:         ['ng/mL', 'nmol/L'],
   phosphate:         ['mg/dL', 'mmol/L'],

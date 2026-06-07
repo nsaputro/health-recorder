@@ -493,7 +493,7 @@ const UNIT_OPTIONS = {
   alt:               ['U/L'],
   alp:               ['U/L'],
   egfr:              ['mL/min/1.73m²'],
-  albumin:           ['g/dL', 'g/L', 'mg/L'],
+  albumin:           ['mg/L', 'mg/24h'],
   urine_creatinine:  ['mg/dL', 'mmol/L'],
   vitamin_d:         ['ng/mL', 'nmol/L'],
   phosphate:         ['mg/dL', 'mmol/L'],
@@ -518,8 +518,7 @@ const isUmolPerL = u => u === 'µmol/L' || u === 'μmol/L';
 function normalizeForBadge(testType, val, unit) {
   if (testType === 'glucose_hba1c'  && unit === 'mmol/mol') return hba1cToPercent(val);
   if (testType === 'creatinine'     && isUmolPerL(unit))    return Math.round(val / 88.42   * 100) / 100;
-  if ((testType === 'hemoglobin' || testType === 'albumin') && unit === 'g/L') return Math.round(val / 10 * 100) / 100;
-  if (testType === 'albumin'    && unit === 'mg/L')    return Math.round(val / 10000   * 100) / 100;
+  if (testType === 'hemoglobin' && unit === 'g/L')    return Math.round(val / 10    * 100) / 100;
   if (testType === 'hemoglobin' && unit === 'mmol/L') return Math.round(val / 0.6206 * 100) / 100;
   if (testType === 'uric_acid'        && isUmolPerL(unit))  return Math.round(val / 59.48   * 100) / 100;
   if (testType === 'urine_creatinine' && unit === 'mmol/L') return Math.round(val / 0.08842 * 10)  / 10;
@@ -541,10 +540,9 @@ function labConvertedHint(testType, value, storedUnit, prefUnit) {
     if (storedUnit === 'mg/dL' && prefUnit === 'mmol') return `(${Math.round(value * 88.42)} µmol/L)`;
     return '';
   }
-  if (testType === 'hemoglobin' || testType === 'albumin') {
-    if (storedUnit === 'g/L')  return `(${Math.round(value / 10 * 100) / 100} g/dL)`;
-    if (testType === 'albumin' && storedUnit === 'mg/L') return `(${Math.round(value / 1000 * 10) / 10} g/L)`;
-    if (testType === 'hemoglobin' && storedUnit === 'mmol/L')
+  if (testType === 'hemoglobin') {
+    if (storedUnit === 'g/L')    return `(${Math.round(value / 10 * 100) / 100} g/dL)`;
+    if (storedUnit === 'mmol/L')
       return `(${Math.round(value / 0.6206 * 100) / 100} g/dL)`;
     if (storedUnit === 'g/dL' && prefUnit === 'mmol') return `(${Math.round(value * 10 * 10) / 10} g/L)`;
     return '';
@@ -600,7 +598,7 @@ function resolvedRange(r) {
     return { ...r, unit: 'µmol/L', low: cv(r.low, 88.42, 1), normal_max: cv(r.normal_max, 88.42, 1), borderline_max: cv(r.borderline_max, 88.42, 1) };
   if (r.test_type === 'vitamin_d')
     return { ...r, unit: 'nmol/L', low: cv(r.low, 2.496, 10), normal_max: cv(r.normal_max, 2.496, 10), borderline_max: cv(r.borderline_max, 2.496, 10) };
-  if (r.test_type === 'hemoglobin' || r.test_type === 'albumin')
+  if (r.test_type === 'hemoglobin')
     return { ...r, unit: 'g/L', low: cv(r.low, 10, 10), normal_max: cv(r.normal_max, 10, 10), borderline_max: cv(r.borderline_max, 10, 10) };
   if (r.test_type === 'urine_creatinine')
     return { ...r, unit: 'mmol/L', low: cv(r.low, 0.08842, 100), normal_max: cv(r.normal_max, 0.08842, 100), borderline_max: cv(r.borderline_max, 0.08842, 100) };
@@ -1369,8 +1367,8 @@ async function setUnitPref(field, value) {
 const RANGE_CATEGORIES = [
   { label: 'Lipids',  types: ['cholesterol_total','cholesterol_ldl','cholesterol_hdl','triglycerides'] },
   { label: 'Glucose', types: ['glucose_fasting','glucose_random','glucose_hba1c'] },
-  { label: 'Kidney',  types: ['creatinine','egfr','uric_acid','urine_creatinine','phosphate'] },
-  { label: 'Blood',   types: ['hemoglobin','albumin'] },
+  { label: 'Kidney',  types: ['creatinine','egfr','uric_acid','urine_creatinine','albumin','phosphate'] },
+  { label: 'Blood',   types: ['hemoglobin'] },
   { label: 'Liver',   types: ['alt','alp'] },
   { label: 'Vitamins', types: ['vitamin_d'] },
 ];
@@ -1386,7 +1384,7 @@ const LAB_ALT_NAMES = {
   urine_creatinine: 'UCr',
   phosphate:        'Pi · Serum Phosphorus',
   hemoglobin:       'Hb · Hgb',
-  albumin:          'Alb · Serum Albumin',
+  albumin:          'MAU · Microalbumine',
   alt:              'SGPT',
   alp:              'Alk Phos',
   vitamin_d:        '25-OH · Calcidiol',
@@ -1406,7 +1404,7 @@ const LAB_DESCRIPTIONS = {
   urine_creatinine:  'Amount of creatinine excreted in urine. Often paired with urine albumin to calculate the albumin-to-creatinine ratio (ACR), a key screening test for kidney damage.',
   phosphate:         'Inorganic phosphate in the blood, regulated by the kidneys and parathyroid hormone. Low levels (hypophosphatemia) can cause weakness; high levels (hyperphosphatemia) are common in kidney disease.',
   hemoglobin:        'Protein in red blood cells that carries oxygen. Low levels indicate anemia.',
-  albumin:           'Main protein produced by the liver and found in blood. Low levels can indicate liver disease, malnutrition, or protein loss through the kidneys.',
+  albumin:           'Albumin excreted in urine. Even small elevations (microalbuminuria, 30–300 mg/L) are an early marker of kidney damage, especially in diabetes and hypertension. Values above 300 mg/L indicate macroalbuminuria.',
   alt:               'Liver enzyme released when liver cells are damaged. Elevated levels may indicate hepatitis, fatty liver, or other liver disease. Also reported as ALAT. Units U/L and IU/L are equivalent.',
   alp:               'Enzyme found in the liver and bone. Elevated levels can signal liver disease, bile duct obstruction, or bone disorders. Units U/L and IU/L are equivalent.',
   vitamin_d:         'Fat-soluble vitamin essential for bone health, immune function, and calcium absorption. Deficiency is common and linked to bone loss, fatigue, and weakened immunity.',
