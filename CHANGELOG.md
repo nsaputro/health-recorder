@@ -8,6 +8,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-06-07
+
 ### Added
 - **Phosphate (Fosfaat)**: new lab test type `phosphate` (serum inorganic phosphate). Default
   unit mmol/L; mg/dL also accepted with automatic conversion hint (1 mmol/L = 3.097 mg/dL).
@@ -228,7 +230,8 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - Pre-built Docker images for `amd64` and `aarch64` on `ghcr.io`
 - `repository.yaml` so HA recognises the repo as a valid addon source
 
-[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/nsaputro/health-recorder/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/nsaputro/health-recorder/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/nsaputro/health-recorder/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/nsaputro/health-recorder/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/nsaputro/health-recorder/compare/v0.4.1...v0.4.2
