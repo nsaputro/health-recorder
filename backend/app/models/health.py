@@ -16,6 +16,9 @@ class LabTestType(str, enum.Enum):
     GLUCOSE_HBA1C = "glucose_hba1c"
     # Uric acid
     URIC_ACID = "uric_acid"
+    # Liver function
+    ALT = "alt"
+    ALP = "alp"
     # Other
     CREATININE = "creatinine"
     HEMOGLOBIN = "hemoglobin"

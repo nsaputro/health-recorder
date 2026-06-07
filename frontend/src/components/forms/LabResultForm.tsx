@@ -16,6 +16,8 @@ const UNIT_OPTIONS: Record<string, string[]> = {
   glucose_hba1c:     ['%', 'mmol/mol'],
   creatinine:        ['mg/dL', 'µmol/L'],
   hemoglobin:        ['g/dL', 'g/L'],
+  alt:               ['U/L'],
+  alp:               ['U/L'],
   other:             ['units'],
 }
 

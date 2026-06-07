@@ -8,6 +8,11 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+### Added
+- **ALT and ALP liver function tests**: new lab test types `alt` (ALT, U/L) and `alp` (ALP, U/L)
+  with reference ranges (ALT normal 7–56 U/L, female ≤45; ALP normal 44–147 U/L) and a new
+  "Liver" category in the Reference Ranges tab.
+
 ### Fixed
 - **Lab chart unit mismatch**: chart and trend stats now normalise stored values to the
   reference unit (mg/dL, %, g/dL) before plotting, so records stored in mmol/L, µmol/L,

@@ -9,6 +9,7 @@ const CATEGORIES: { label: string; types: string[] }[] = [
   { label: 'Glucose',   types: ['glucose_fasting', 'glucose_random', 'glucose_hba1c'] },
   { label: 'Kidney',    types: ['creatinine', 'uric_acid'] },
   { label: 'Blood',     types: ['hemoglobin'] },
+  { label: 'Liver',     types: ['alt', 'alp'] },
 ]
 
 function refRangeText(r: LabReferenceRange): string {
