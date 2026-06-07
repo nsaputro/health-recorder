@@ -229,7 +229,7 @@ status (success|error), records_synced, error_message, created_at
 
 ---
 
-## Core Features
+## Releases
 
 ### MVP (v0.1.x) ✅
 
@@ -336,23 +336,6 @@ Migration steps (in order):
 - ✅ **"Liver" category in Reference Ranges tab**: ALT and ALP grouped under a new Liver section in both UIs
 - ✅ **Alternative clinical names in Reference Ranges**: each test shows its common alternative name as small muted text (e.g. SGPT under ALT, Alk Phos under ALP, A1C under HbA1c, FBS/FPG under Fasting Glucose, SCr under Creatinine, Hb/Hgb under Hemoglobin)
 - ✅ **Info icon in Reference Ranges**: a ⓘ button next to each test name reveals a brief description of what the test measures and its clinical significance (hover tooltip on React; click-to-toggle popover on HA addon)
-
----
-
-## Development Milestones
-
-| Milestone | Description | Status |
-|---|---|---|
-| v0.1.0 | MVP: health CRUD + Google sync + HA addon | ✅ Released |
-| v0.1.1 – v0.1.4 | HA ingress fix, HA-themed UI, cache headers, dark mode | ✅ Released |
-| v0.2.0 | Multi-user + impersonation prevention + unit tests | ✅ Released |
-| v0.3.0 | Trend charts for all metric types | ✅ Released |
-| v0.3.2 | Hide sync UI when not connected | ✅ Released |
-| v0.3.3 | Standalone frontend modernisation (React 19, Tailwind 4, Router 7, Vite 8) | ✅ Released |
-| v0.4.0 | Gender-adjusted lab ranges + unit preferences (mg/dL ↔ mmol, kg ↔ lb) | ✅ Released |
-| v0.4.1 | HbA1c mmol/mol unit support + status badge normalisation | ✅ Released |
-| v0.4.2 | Lab chart unit normalization + Reference Ranges quality improvements | ✅ Released |
-| v0.4.3 | ALT/ALP liver function tests + Reference Ranges alt names & info icon | 🔄 In progress |
 
 ---
 
