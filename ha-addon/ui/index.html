@@ -198,6 +198,12 @@ tr:hover td{background:var(--hover-bg)}
 .gpick-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 .gpick-btn:hover:not(.active){border-color:var(--primary);color:var(--primary)}
 .save-msg{font-size:11px;color:var(--success);margin-left:4px}
+
+/* ── Range tab: info popup ──────────────────────────────────────── */
+.info-btn{background:none;border:none;cursor:pointer;color:var(--text-hint);font-size:12px;padding:0 0 0 4px;vertical-align:baseline;line-height:1;font-family:inherit}
+.info-btn:hover{color:var(--primary)}
+.info-popup{position:absolute;left:0;top:20px;z-index:200;background:var(--surface);border:1px solid var(--divider);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);padding:10px 12px;font-size:12px;color:var(--text-secondary);max-width:220px;line-height:1.5;font-weight:400;white-space:normal}
+.info-popup.hidden{display:none}
 </style>
 </head>
 <body>
@@ -1310,6 +1316,45 @@ const RANGE_CATEGORIES = [
   { label: 'Liver',   types: ['alt','alp'] },
 ];
 
+const LAB_ALT_NAMES = {
+  glucose_fasting:  'FBS · FPG',
+  glucose_random:   'RBS',
+  glucose_hba1c:    'A1C · Glycated Hemoglobin',
+  cholesterol_ldl:  'Bad Cholesterol',
+  cholesterol_hdl:  'Good Cholesterol',
+  creatinine:       'SCr',
+  hemoglobin:       'Hb · Hgb',
+  alt:              'SGPT',
+  alp:              'Alk Phos',
+};
+
+const LAB_DESCRIPTIONS = {
+  cholesterol_total: 'Total cholesterol in the blood. High levels increase risk of heart disease and stroke.',
+  cholesterol_ldl:   "'Bad' cholesterol that builds up in artery walls. Lower levels reduce cardiovascular risk.",
+  cholesterol_hdl:   "'Good' cholesterol that removes other cholesterol from the bloodstream. Higher is better.",
+  triglycerides:     'Fat in the blood stored from unused calories. High levels are linked to heart disease.',
+  glucose_fasting:   'Blood sugar after an 8-hour fast. Key test for screening diabetes and prediabetes.',
+  glucose_random:    'Blood sugar at any time regardless of meals. Used for quick diabetes assessment.',
+  glucose_hba1c:     'Reflects average blood glucose over 2–3 months. A standard diabetes management marker.',
+  uric_acid:         'Waste product from purine metabolism. Elevated levels can cause gout and kidney stones.',
+  creatinine:        'Waste product filtered by the kidneys. Elevated levels indicate reduced kidney function.',
+  hemoglobin:        'Protein in red blood cells that carries oxygen. Low levels indicate anemia.',
+  alt:               'Liver enzyme released when liver cells are damaged. Elevated levels may indicate hepatitis, fatty liver, or other liver disease.',
+  alp:               'Enzyme found in the liver and bone. Elevated levels can signal liver disease, bile duct obstruction, or bone disorders.',
+};
+
+function toggleInfo(testType, ev) {
+  ev.stopPropagation();
+  const popup = document.getElementById('rinfo-' + testType);
+  if (!popup) return;
+  const wasHidden = popup.classList.contains('hidden');
+  document.querySelectorAll('.info-popup:not(.hidden)').forEach(p => p.classList.add('hidden'));
+  if (wasHidden) popup.classList.remove('hidden');
+}
+document.addEventListener('click', () => {
+  document.querySelectorAll('.info-popup:not(.hidden)').forEach(p => p.classList.add('hidden'));
+});
+
 function renderRanges() {
   const gender = S.prefs?.gender;
   const note   = gender && gender !== 'unset' ? ` (${gender} ranges)` : ' (universal ranges)';
@@ -1333,8 +1378,11 @@ function renderRanges() {
         const latestCell = l
           ? `<div><strong>${l.value} ${l.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''} ${labBadge(r.test_type, l.value, l.unit)}<div style="font-size:11px;color:var(--text-hint);margin-top:2px">${fmt(l.measured_at)}</div></div>`
           : '<span style="color:var(--text-hint)">—</span>';
+        const altName = LAB_ALT_NAMES[r.test_type] ? `<div style="font-size:11px;color:var(--text-hint);margin-top:1px">${LAB_ALT_NAMES[r.test_type]}</div>` : '';
+        const desc = LAB_DESCRIPTIONS[r.test_type];
+        const infoEl = desc ? `<div style="position:relative;display:inline-block"><button class="info-btn" onclick="toggleInfo('${r.test_type}',event)" aria-label="Info about ${r.display_name}">ⓘ</button><div id="rinfo-${r.test_type}" class="info-popup hidden">${desc}</div></div>` : '';
         return `<tr>
-          <td><strong>${r.display_name}</strong><br><span style="font-size:11px;color:var(--text-secondary)">${cat.label}</span></td>
+          <td><div style="display:flex;align-items:flex-start;gap:2px"><div><strong>${r.display_name}</strong>${altName}</div>${infoEl}</div></td>
           <td style="color:var(--text-secondary)">${refRangeText(rr)}</td>
           <td>${latestCell}</td>
         </tr>`;

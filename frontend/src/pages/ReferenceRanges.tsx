@@ -12,6 +12,33 @@ const CATEGORIES: { label: string; types: string[] }[] = [
   { label: 'Liver',     types: ['alt', 'alp'] },
 ]
 
+const LAB_ALT_NAMES: Record<string, string> = {
+  glucose_fasting:   'FBS · FPG',
+  glucose_random:    'RBS',
+  glucose_hba1c:     'A1C · Glycated Hemoglobin',
+  cholesterol_ldl:   'Bad Cholesterol',
+  cholesterol_hdl:   'Good Cholesterol',
+  creatinine:        'SCr',
+  hemoglobin:        'Hb · Hgb',
+  alt:               'SGPT',
+  alp:               'Alk Phos',
+}
+
+const LAB_DESCRIPTIONS: Record<string, string> = {
+  cholesterol_total: 'Total cholesterol in the blood. High levels increase risk of heart disease and stroke.',
+  cholesterol_ldl:   "'Bad' cholesterol that builds up in artery walls. Lower levels reduce cardiovascular risk.",
+  cholesterol_hdl:   "'Good' cholesterol that removes other cholesterol from the bloodstream. Higher is better.",
+  triglycerides:     'Fat in the blood stored from unused calories. High levels are linked to heart disease.',
+  glucose_fasting:   'Blood sugar after an 8-hour fast. Key test for screening diabetes and prediabetes.',
+  glucose_random:    'Blood sugar at any time regardless of meals. Used for quick diabetes assessment.',
+  glucose_hba1c:     'Reflects average blood glucose over 2–3 months. A standard diabetes management marker.',
+  uric_acid:         'Waste product from purine metabolism. Elevated levels can cause gout and kidney stones.',
+  creatinine:        'Waste product filtered by the kidneys. Elevated levels indicate reduced kidney function.',
+  hemoglobin:        'Protein in red blood cells that carries oxygen. Low levels indicate anemia.',
+  alt:               'Liver enzyme released when liver cells are damaged. Elevated levels may indicate hepatitis, fatty liver, or other liver disease.',
+  alp:               'Enzyme found in the liver and bone. Elevated levels can signal liver disease, bile duct obstruction, or bone disorders.',
+}
+
 function refRangeText(r: LabReferenceRange): string {
   if (r.higher_better) return `≥ ${r.low} ${r.unit} (higher is better)`
   const hi = r.normal_max != null && r.normal_max < 900 ? `${r.normal_max}` : ''
@@ -92,7 +119,26 @@ export default function ReferenceRangesPage() {
                       const latest = latestByType[r.test_type]
                       return (
                         <tr key={r.test_type} className="hover:bg-gray-50">
-                          <td className="py-2.5 pr-6 font-medium">{r.display_name}</td>
+                          <td className="py-2.5 pr-6">
+                            <div className="font-medium">{r.display_name}</div>
+                            {LAB_ALT_NAMES[r.test_type] && (
+                              <div className="text-xs text-gray-400">{LAB_ALT_NAMES[r.test_type]}</div>
+                            )}
+                            {LAB_DESCRIPTIONS[r.test_type] && (
+                              <div className="relative inline-block group mt-0.5">
+                                <button
+                                  type="button"
+                                  className="text-gray-400 hover:text-blue-500 focus:text-blue-500 focus:outline-none text-sm leading-none"
+                                  aria-label={`About ${r.display_name}`}
+                                >
+                                  ⓘ
+                                </button>
+                                <div className="invisible group-hover:visible group-focus-within:visible absolute left-0 top-5 z-50 w-56 p-3 rounded-lg bg-white border border-gray-200 shadow-lg text-xs text-gray-600 font-normal whitespace-normal">
+                                  {LAB_DESCRIPTIONS[r.test_type]}
+                                </div>
+                              </div>
+                            )}
+                          </td>
                           <td className="py-2.5 pr-6 text-gray-600">{refRangeText(r)}</td>
                           <td className="py-2.5 pr-6">
                             {latest ? (
