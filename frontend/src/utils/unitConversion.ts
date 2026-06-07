@@ -33,11 +33,13 @@ export function hba1cToMmolMol(percent: number): number {
 const isUmolPerL = (u: string) => u === 'µmol/L' || u === 'μmol/L'
 
 // Normalise a lab value to the unit used in reference ranges before badge comparison.
-// Reference ranges are always stored in primary units: mg/dL, %, g/dL.
+// Reference ranges are always stored in primary units: mg/dL, %, g/dL, ng/mL, mL/min/1.73m².
 export function normalizeForBadge(testType: string, value: number, unit: string): number {
-  if (testType === 'glucose_hba1c' && unit === 'mmol/mol') return hba1cToPercent(value)
-  if (testType === 'creatinine'   && isUmolPerL(unit)) return Math.round(value / 88.42 * 100) / 100
-  if (testType === 'hemoglobin'   && unit === 'g/L')    return Math.round(value / 10  * 100) / 100
+  if (testType === 'glucose_hba1c'    && unit === 'mmol/mol') return hba1cToPercent(value)
+  if (testType === 'creatinine'       && isUmolPerL(unit))    return Math.round(value / 88.42    * 100) / 100
+  if ((testType === 'hemoglobin' || testType === 'albumin') && unit === 'g/L') return Math.round(value / 10 * 100) / 100
+  if (testType === 'urine_creatinine' && unit === 'mmol/L')   return Math.round(value / 0.08842  * 10)  / 10
+  if (testType === 'vitamin_d'        && unit === 'nmol/L')   return Math.round(value / 2.496    * 10)  / 10
   const f = MMOL_FACTORS[testType]
   if (f && unit === 'mmol/L') return Math.round(value / f * 10) / 10
   return value
@@ -55,16 +57,28 @@ export function labConvertedHint(
     if (storedUnit === '%' && prefUnit === 'mmol') return `(${hba1cToMmolMol(value)} mmol/mol)`
     return ''
   }
-  // Creatinine: µmol/L ↔ mg/dL (1 mg/dL = 88.42 µmol/L)
+  // Creatinine (serum): µmol/L ↔ mg/dL (1 mg/dL = 88.42 µmol/L)
   if (testType === 'creatinine') {
     if (isUmolPerL(storedUnit)) return `(${Math.round(value / 88.42 * 100) / 100} mg/dL)`
     if (storedUnit === 'mg/dL' && prefUnit === 'mmol') return `(${Math.round(value * 88.42)} µmol/L)`
     return ''
   }
-  // Hemoglobin: g/L ↔ g/dL (1 g/dL = 10 g/L)
-  if (testType === 'hemoglobin') {
+  // Hemoglobin / Albumin: g/L ↔ g/dL (1 g/dL = 10 g/L)
+  if (testType === 'hemoglobin' || testType === 'albumin') {
     if (storedUnit === 'g/L')  return `(${Math.round(value / 10 * 100) / 100} g/dL)`
     if (storedUnit === 'g/dL' && prefUnit === 'mmol') return `(${Math.round(value * 10 * 10) / 10} g/L)`
+    return ''
+  }
+  // Urine creatinine: mmol/L ↔ mg/dL (1 mg/dL = 0.08842 mmol/L)
+  if (testType === 'urine_creatinine') {
+    if (storedUnit === 'mmol/L') return `(${Math.round(value / 0.08842 * 10) / 10} mg/dL)`
+    if (storedUnit === 'mg/dL' && prefUnit === 'mmol') return `(${Math.round(value * 0.08842 * 100) / 100} mmol/L)`
+    return ''
+  }
+  // Vitamin D: nmol/L ↔ ng/mL (1 ng/mL = 2.496 nmol/L)
+  if (testType === 'vitamin_d') {
+    if (storedUnit === 'nmol/L') return `(${Math.round(value / 2.496 * 10) / 10} ng/mL)`
+    if (storedUnit === 'ng/mL' && prefUnit === 'mmol') return `(${Math.round(value * 2.496 * 10) / 10} nmol/L)`
     return ''
   }
   // Standard mg/dL ↔ mmol/L (cholesterol, triglycerides, glucose, uric acid)

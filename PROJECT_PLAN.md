@@ -333,9 +333,31 @@ Migration steps (in order):
 
 - ✅ **ALT liver function test**: new lab test type `alt` (ALT / SGPT, U/L) with reference range 7–56 U/L normal (female ≤ 45), borderline ≤ 112 (female ≤ 90); gender-adjusted ranges supported
 - ✅ **ALP liver function test**: new lab test type `alp` (ALP / Alk Phos, U/L) with reference range 44–147 U/L normal, borderline ≤ 200
+- ✅ **eGFR**: new lab test type `egfr` (mL/min/1.73m²); higher-is-better, normal ≥ 60; grouped under Kidney
+- ✅ **Albumin**: new lab test type `albumin` (g/dL / g/L); serum albumin normal 3.5–5.0 g/dL; grouped under Blood
+- ✅ **Urine Creatinine**: new lab test type `urine_creatinine` (mg/dL / mmol/L); normal 20–300 mg/dL; grouped under Kidney; mg/dL ↔ mmol/L conversion hints
+- ✅ **Vitamin D**: new lab test type `vitamin_d` (ng/mL / nmol/L); normal 30–100 ng/mL; new Vitamins category; ng/mL ↔ nmol/L conversion hints
 - ✅ **"Liver" category in Reference Ranges tab**: ALT and ALP grouped under a new Liver section in both UIs
 - ✅ **Alternative clinical names in Reference Ranges**: each test shows its common alternative name as small muted text (e.g. SGPT under ALT, Alk Phos under ALP, A1C under HbA1c, FBS/FPG under Fasting Glucose, SCr under Creatinine, Hb/Hgb under Hemoglobin)
 - ✅ **Info icon in Reference Ranges**: a ⓘ button next to each test name reveals a brief description of what the test measures and its clinical significance (hover tooltip on React; click-to-toggle popover on HA addon)
+
+### HA Sensor Entities + Reminders (v0.5.x) ⬜
+
+- ⬜ **Expose metrics as HA sensor entities**: latest value for each tracked metric (weight, BP, heart rate, each lab test) published as Home Assistant sensor entities — usable in dashboards, automations, and history graphs
+- ⬜ **HA notification reminders**: configurable reminder to log a metric if it hasn't been recorded in N days; delivered via HA's notification system
+- ⬜ **HA service calls**: register HA services (e.g. `health_recorder.log_weight`) so automations can push readings directly into the addon
+
+### Data Export & Import (v0.6.x) ⬜
+
+- ⬜ **CSV / JSON export**: one-click download of all health data in a portable format; covers all metric types
+- ⬜ **Bulk import**: upload a CSV to backfill historical records; validates units and test types before inserting
+- ⬜ **PDF health summary**: printable one-page report per metric type showing trend chart, recent values, and reference ranges — useful to share with a doctor
+
+### Goals & Insights (v0.7.x) ⬜
+
+- ⬜ **Personal targets**: set a goal for any metric (e.g. weight < 80 kg, LDL < 100 mg/dL) and display progress toward it in charts and the Reference Ranges tab
+- ⬜ **Medication log**: track medications with name, dose, frequency, and start/end date; displayed as a timeline overlay on health charts
+- ⬜ **Correlation view**: plot two metrics against each other over time (e.g. weight vs fasting glucose, or medication timing vs blood pressure) to surface patterns
 
 ---
 
