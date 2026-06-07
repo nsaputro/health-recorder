@@ -484,7 +484,9 @@ const UNIT_OPTIONS = {
   uric_acid:         ['mg/dL', 'mmol/L'],
   creatinine:        ['mg/dL', 'μmol/L'],
   hemoglobin:        ['g/dL', 'g/L'],
-  other:             ['mg/dL', 'mmol/L', 'g/dL', 'g/L', '%', 'units'],
+  alt:               ['U/L'],
+  alp:               ['U/L'],
+  other:             ['mg/dL', 'mmol/L', 'g/dL', 'g/L', '%', 'U/L', 'units'],
 };
 
 
@@ -1305,6 +1307,7 @@ const RANGE_CATEGORIES = [
   { label: 'Glucose', types: ['glucose_fasting','glucose_random','glucose_hba1c'] },
   { label: 'Kidney',  types: ['creatinine','uric_acid'] },
   { label: 'Blood',   types: ['hemoglobin'] },
+  { label: 'Liver',   types: ['alt','alp'] },
 ];
 
 function renderRanges() {
