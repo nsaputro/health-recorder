@@ -54,6 +54,8 @@ LAB_TEST_UNITS: dict[str, str] = {
     "uric_acid":         "mg/dL",
     "creatinine":        "mg/dL",
     "hemoglobin":        "g/dL",
+    "alt":               "U/L",
+    "alp":               "U/L",
     "other":             "units",
 }
 
@@ -68,6 +70,8 @@ LAB_TEST_DISPLAY: dict[str, str] = {
     "uric_acid":         "Uric Acid",
     "creatinine":        "Creatinine",
     "hemoglobin":        "Hemoglobin",
+    "alt":               "ALT",
+    "alp":               "ALP",
     "other":             "Other",
 }
 
@@ -98,6 +102,11 @@ LAB_REFERENCE_RANGES: dict[str, dict] = {
         "male":   {"low": 13.5, "normal_max": 17.5},
         "female": {"low": 12.0, "normal_max": 15.5},
     },
+    "alt":               {
+        "low": 7,  "normal_max": 56,  "borderline_max": 112,
+        "female": {"normal_max": 45, "borderline_max": 90},
+    },
+    "alp":               {"low": 44, "normal_max": 147, "borderline_max": 200},
 }
 
 
