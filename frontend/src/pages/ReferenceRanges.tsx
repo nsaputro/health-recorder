@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { labResults as labApi, userPrefs } from '../api/client'
 import type { LabReferenceRange, LabResult } from '../types/health'
-import { convertRangeToMmol, labConvertedHint, normalizeForBadge } from '../utils/unitConversion'
+import { resolveRangeForDisplay, labConvertedHint, normalizeForBadge } from '../utils/unitConversion'
 
 const CATEGORIES: { label: string; types: string[] }[] = [
   { label: 'Lipids',    types: ['cholesterol_total', 'cholesterol_ldl', 'cholesterol_hdl', 'triglycerides'] },
@@ -84,11 +84,13 @@ export default function ReferenceRangesPage() {
     queryFn: () => labApi.list({ limit: 500 }),
   })
 
-  const wantsMmol = prefs?.lab_unit === 'mmol'
-  const resolvedTypes = wantsMmol
-    ? labTypes.map((t) => convertRangeToMmol(t, t.test_type))
-    : labTypes
-  const typeMap = Object.fromEntries(resolvedTypes.map((t) => [t.test_type, t]))
+  const labUnit = prefs?.lab_unit ?? 'mg_dl'
+  // displayTypeMap: range values/units converted to the user's preferred unit (for display only)
+  // badgeTypeMap: always original backend units (normalizeForBadge converts to these for comparison)
+  const displayTypeMap = Object.fromEntries(
+    labTypes.map((t) => [t.test_type, resolveRangeForDisplay(t, labUnit)])
+  )
+  const badgeTypeMap = Object.fromEntries(labTypes.map((t) => [t.test_type, t]))
 
   // Latest result per test type
   const latestByType = allResults.reduce<Record<string, LabResult>>((acc, r) => {
@@ -110,7 +112,7 @@ export default function ReferenceRangesPage() {
         <p className="text-gray-400">Loading…</p>
       ) : (
         CATEGORIES.map(({ label, types }) => {
-          const rows = types.map((t) => typeMap[t]).filter(Boolean)
+          const rows = types.map((t) => displayTypeMap[t]).filter(Boolean)
           if (!rows.length) return null
           return (
             <div key={label} className="card">
@@ -158,8 +160,8 @@ export default function ReferenceRangesPage() {
                               <div>
                                 <span className="font-semibold">
                                   {latest.value} {latest.unit}
-                                  {prefs?.lab_unit && (() => {
-                                    const hint = labConvertedHint(latest.test_type, latest.value, latest.unit, prefs.lab_unit)
+                                  {(() => {
+                                    const hint = labConvertedHint(latest.test_type, latest.value, latest.unit, labUnit)
                                     return hint ? <span className="text-gray-400 font-normal ml-1 text-xs">{hint}</span> : null
                                   })()}
                                 </span>
@@ -170,7 +172,7 @@ export default function ReferenceRangesPage() {
                             )}
                           </td>
                           <td className="py-2.5">
-                            {latest ? <StatusBadge value={latest.value} unit={latest.unit} range={typeMap[r.test_type]} /> : null}
+                            {latest ? <StatusBadge value={latest.value} unit={latest.unit} range={badgeTypeMap[r.test_type]} /> : null}
                           </td>
                         </tr>
                       )

@@ -132,3 +132,54 @@ export function convertRangeToMmol(r: LabReferenceRange, testType: string): LabR
     borderline_max: c(r.borderline_max),
   }
 }
+
+// Resolve a reference range's values and unit for display in the user's preferred unit system.
+// Use this for display only — badge comparison always uses the backend's primary units.
+export function resolveRangeForDisplay(r: LabReferenceRange, labUnit: 'mg_dl' | 'mmol'): LabReferenceRange {
+  const wantsMmol = labUnit === 'mmol'
+  // factor × precision approach: Math.round(value * factor * precision) / precision
+  const cv = (v: number | null, factor: number, precision: number): number | null =>
+    v != null && v < 900 ? Math.round(v * factor * precision) / precision : v
+
+  // MMOL_FACTORS tests (cholesterol, triglycerides, glucose, uric acid): mg/dL ↔ mmol/L
+  const f = MMOL_FACTORS[r.test_type]
+  if (f) {
+    if (!wantsMmol) return r
+    return { ...r, unit: 'mmol/L', low: cv(r.low, f, 100), normal_max: cv(r.normal_max, f, 100), borderline_max: cv(r.borderline_max, f, 100) }
+  }
+
+  // Phosphate: backend stores mmol/L; convert to mg/dL when user prefers mg/dL
+  if (r.test_type === 'phosphate' && !wantsMmol) {
+    return { ...r, unit: 'mg/dL', low: cv(r.low, 3.097, 10), normal_max: cv(r.normal_max, 3.097, 10), borderline_max: cv(r.borderline_max, 3.097, 10) }
+  }
+
+  if (!wantsMmol) return r  // all remaining tests already use non-SI defaults
+
+  // HbA1c: % → mmol/mol (affine conversion; skip zero lower bound)
+  if (r.test_type === 'glucose_hba1c') {
+    const toM = (v: number | null) => v != null && v > 0 && v < 900 ? hba1cToMmolMol(v) : v
+    return { ...r, unit: 'mmol/mol', low: toM(r.low), normal_max: toM(r.normal_max), borderline_max: toM(r.borderline_max) }
+  }
+
+  // Creatinine: mg/dL → µmol/L (1 mg/dL = 88.42 µmol/L)
+  if (r.test_type === 'creatinine') {
+    return { ...r, unit: 'µmol/L', low: cv(r.low, 88.42, 1), normal_max: cv(r.normal_max, 88.42, 1), borderline_max: cv(r.borderline_max, 88.42, 1) }
+  }
+
+  // Vitamin D: ng/mL → nmol/L (1 ng/mL = 2.496 nmol/L)
+  if (r.test_type === 'vitamin_d') {
+    return { ...r, unit: 'nmol/L', low: cv(r.low, 2.496, 10), normal_max: cv(r.normal_max, 2.496, 10), borderline_max: cv(r.borderline_max, 2.496, 10) }
+  }
+
+  // Albumin / Hemoglobin: g/dL → g/L (1 g/dL = 10 g/L)
+  if (r.test_type === 'hemoglobin' || r.test_type === 'albumin') {
+    return { ...r, unit: 'g/L', low: cv(r.low, 10, 10), normal_max: cv(r.normal_max, 10, 10), borderline_max: cv(r.borderline_max, 10, 10) }
+  }
+
+  // Urine creatinine: mg/dL → mmol/L (1 mg/dL = 0.08842 mmol/L)
+  if (r.test_type === 'urine_creatinine') {
+    return { ...r, unit: 'mmol/L', low: cv(r.low, 0.08842, 100), normal_max: cv(r.normal_max, 0.08842, 100), borderline_max: cv(r.borderline_max, 0.08842, 100) }
+  }
+
+  return r
+}
