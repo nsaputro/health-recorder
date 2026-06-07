@@ -60,6 +60,7 @@ LAB_TEST_UNITS: dict[str, str] = {
     "albumin":          "g/dL",
     "urine_creatinine": "mg/dL",
     "vitamin_d":        "ng/mL",
+    "phosphate":        "mmol/L",
     "other":             "units",
 }
 
@@ -80,6 +81,7 @@ LAB_TEST_DISPLAY: dict[str, str] = {
     "albumin":          "Albumin",
     "urine_creatinine": "Urine Creatinine",
     "vitamin_d":        "Vitamin D",
+    "phosphate":        "Phosphate",
     "other":             "Other",
 }
 
@@ -119,6 +121,7 @@ LAB_REFERENCE_RANGES: dict[str, dict] = {
     "albumin":          {"low": 3.5, "normal_max": 5.0, "borderline_max": 5.5},
     "urine_creatinine": {"low": 20, "normal_max": 300,  "borderline_max": 370},
     "vitamin_d":        {"low": 30, "normal_max": 100,  "borderline_max": 100},
+    "phosphate":        {"low": 0.87, "normal_max": 1.45, "borderline_max": 1.78},
 }
 
 
