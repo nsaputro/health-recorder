@@ -83,6 +83,6 @@ export interface GoogleCredential {
 }
 
 export interface SyncResult {
-  google_fit: { body_metrics: number; vital_signs: number; lab_results: number; errors: number }
+  google_health: { body_metrics: number; vital_signs: number; lab_results: number; errors: number }
   google_sheets: { body_metrics: number; vital_signs: number; lab_results: number; errors: number }
 }

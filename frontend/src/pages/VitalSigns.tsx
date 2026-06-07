@@ -163,7 +163,7 @@ export default function VitalSignsPage() {
                     <td className="py-2 pr-3">{r.heart_rate ? `${r.heart_rate} bpm` : '—'}</td>
                     <td className="py-2 pr-3">
                       <div className="flex gap-1">
-                        {r.synced_to_fit    ? <span className="badge-success">Fit</span>    : <span className="badge-gray">Fit</span>}
+                        {r.synced_to_fit    ? <span className="badge-success">Health</span>    : <span className="badge-gray">Health</span>}
                         {r.synced_to_sheets ? <span className="badge-success">Sheets</span> : <span className="badge-gray">Sheets</span>}
                       </div>
                     </td>

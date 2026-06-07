@@ -45,12 +45,12 @@ class Settings:
         "openid",
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile",
-        "https://www.googleapis.com/auth/fitness.body.read",
-        "https://www.googleapis.com/auth/fitness.body.write",
+        # Google Health API v4 — weight, heart rate, blood glucose
+        "https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements",
+        # Google Fit — blood pressure only (no Health API v4 equivalent yet)
         "https://www.googleapis.com/auth/fitness.blood_pressure.read",
         "https://www.googleapis.com/auth/fitness.blood_pressure.write",
-        "https://www.googleapis.com/auth/fitness.blood_glucose.read",
-        "https://www.googleapis.com/auth/fitness.blood_glucose.write",
+        # Google Sheets
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive.file",
     ]

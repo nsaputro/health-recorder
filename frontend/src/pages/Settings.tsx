@@ -194,10 +194,10 @@ export default function SettingsPage() {
               <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-3 text-sm">
                 <p className="font-medium">Sync complete!</p>
                 <p className="text-xs mt-1">
-                  Fit — Weight: {syncMutation.data?.google_fit.body_metrics},
-                  Vitals: {syncMutation.data?.google_fit.vital_signs},
-                  Labs: {syncMutation.data?.google_fit.lab_results},
-                  Errors: {syncMutation.data?.google_fit.errors}
+                  Health — Weight: {syncMutation.data?.google_health.body_metrics},
+                  Vitals: {syncMutation.data?.google_health.vital_signs},
+                  Labs: {syncMutation.data?.google_health.lab_results},
+                  Errors: {syncMutation.data?.google_health.errors}
                 </p>
                 <p className="text-xs">
                   Sheets — Weight: {syncMutation.data?.google_sheets.body_metrics},
@@ -211,10 +211,11 @@ export default function SettingsPage() {
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">
-              Connect your Google account to sync health data to Google Fit and Google Sheets.
+              Connect your Google account to sync health data to Google Health and Google Sheets.
             </p>
             <ul className="text-sm text-gray-500 space-y-1 list-disc list-inside">
-              <li><strong>Google Fit</strong> — weight, blood pressure, heart rate, blood glucose</li>
+              <li><strong>Google Health</strong> — weight, heart rate, blood glucose</li>
+              <li><strong>Google Fit</strong> — blood pressure (no Google Health API equivalent yet)</li>
               <li><strong>Google Sheets</strong> — all metrics including cholesterol, uric acid, HbA1c</li>
             </ul>
             <a
@@ -234,7 +235,7 @@ export default function SettingsPage() {
           <p className="font-medium">To enable Google sync:</p>
           <ol className="list-decimal list-inside space-y-2">
             <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a></li>
-            <li>Create a project and enable the <strong>Google Fitness API</strong> and <strong>Google Sheets API</strong></li>
+            <li>Create a project and enable the <strong>Google Health API</strong>, <strong>Google Fitness API</strong>, and <strong>Google Sheets API</strong></li>
             <li>Create OAuth 2.0 credentials (Web application type)</li>
             <li>Add <code className="bg-gray-100 px-1 rounded">http://localhost:8000/auth/google/callback</code> as an authorized redirect URI</li>
             <li>Set <code className="bg-gray-100 px-1 rounded">GOOGLE_CLIENT_ID</code> and <code className="bg-gray-100 px-1 rounded">GOOGLE_CLIENT_SECRET</code> in backend <code className="bg-gray-100 px-1 rounded">.env</code></li>
