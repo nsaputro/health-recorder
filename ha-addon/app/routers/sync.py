@@ -1,11 +1,11 @@
-"""Sync endpoints — trigger Google Fit and Google Sheets pushes."""
+"""Sync endpoints — trigger Google Health / Google Fit and Google Sheets pushes."""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..dependencies import HAUser, get_ha_user
 from ..models.health import BodyMetric, LabResult, VitalSign
-from ..services import google_fit, google_sheets
+from ..services import google_health, google_sheets
 from ..services.google_auth import get_stored_credential
 
 router = APIRouter(prefix="/sync", tags=["sync"])
@@ -37,9 +37,9 @@ def sync_body_metric(
     )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
-    fit_ok = google_fit.sync_body_metric(record, db, ha_user_id=user.id)
+    health_ok = google_health.sync_body_metric(record, db, ha_user_id=user.id)
     sheets_ok = google_sheets.sync_body_metric(record, db, ha_user_id=user.id)
-    return {"google_fit": fit_ok, "google_sheets": sheets_ok}
+    return {"google_health": health_ok, "google_sheets": sheets_ok}
 
 
 @router.post("/lab-results/{record_id}")
@@ -56,9 +56,9 @@ def sync_lab_result(
     )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
-    fit_ok = google_fit.sync_lab_result(record, db, ha_user_id=user.id)
+    health_ok = google_health.sync_lab_result(record, db, ha_user_id=user.id)
     sheets_ok = google_sheets.sync_lab_result(record, db, ha_user_id=user.id)
-    return {"google_fit": fit_ok, "google_sheets": sheets_ok}
+    return {"google_health": health_ok, "google_sheets": sheets_ok}
 
 
 @router.post("/vital-signs/{record_id}")
@@ -75,20 +75,20 @@ def sync_vital_sign(
     )
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
-    fit_ok = google_fit.sync_vital_sign(record, db, ha_user_id=user.id)
+    health_ok = google_health.sync_vital_sign(record, db, ha_user_id=user.id)
     sheets_ok = google_sheets.sync_vital_sign(record, db, ha_user_id=user.id)
-    return {"google_fit": fit_ok, "google_sheets": sheets_ok}
+    return {"google_health": health_ok, "google_sheets": sheets_ok}
 
 
 # ── Batch sync all unsynced records ──────────────────────────────────────────
 
 @router.post("/all")
 def sync_all(user: HAUser = Depends(get_ha_user), db: Session = Depends(get_db)):
-    """Push all unsynced records for the current user to Google Fit and Sheets."""
+    """Push all unsynced records for the current user to Google Health and Sheets."""
     _require_google(db, user.id)
-    fit_results = google_fit.sync_all_unsynced(db, ha_user_id=user.id)
+    health_results = google_health.sync_all_unsynced(db, ha_user_id=user.id)
     sheets_results = google_sheets.sync_all_unsynced(db, ha_user_id=user.id)
     return {
-        "google_fit": fit_results,
+        "google_health": health_results,
         "google_sheets": sheets_results,
     }

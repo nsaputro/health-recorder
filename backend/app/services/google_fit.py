@@ -1,13 +1,10 @@
 """Google Fit REST API sync service.
 
-Supported data types:
-  - Body weight  → com.google.weight
-  - Blood pressure → com.google.blood_pressure
-  - Blood glucose  → com.google.blood_glucose
-  - Heart rate     → com.google.heart_rate.bpm
+As of 2026, new sync for weight/heart-rate/glucose uses the Google Health API
+(google_health.py). This module now handles blood pressure only, since the
+Google Health API v4 has no blood_pressure data type.
 
-Lab results (cholesterol, uric acid, HbA1c, etc.) are NOT native Google Fit
-data types, so they are only synced to Google Sheets.
+Google Fit REST API is supported until end of 2026.
 """
 import time
 from datetime import datetime, timezone
@@ -232,6 +229,41 @@ def sync_lab_result(record: LabResult, db: Session) -> bool:
         return True
     except Exception as e:
         _log(db, "google_fit", "lab_result", record.id, "error", str(e))
+        return False
+
+
+def sync_vital_sign_bp(record: VitalSign, db: Session) -> bool:
+    """Sync blood pressure only (no Health API equivalent; keeps using Fit)."""
+    if record.systolic_bp is None or record.diastolic_bp is None:
+        return False
+    creds = get_credentials(db)
+    if not creds:
+        return False
+    try:
+        service = build("fitness", "v1", credentials=creds)
+        ns = _ns(record.measured_at)
+        ds_id = _get_or_create_datasource(service, "blood_pressure")
+        body = {
+            "dataSourceId": ds_id,
+            "maxEndTimeNs": ns,
+            "minStartTimeNs": ns,
+            "point": [{
+                "dataTypeName": "com.google.blood_pressure",
+                "startTimeNanos": str(ns),
+                "endTimeNanos":   str(ns),
+                "value": [
+                    {"fpVal": float(record.systolic_bp)},
+                    {"fpVal": float(record.diastolic_bp)},
+                ],
+            }],
+        }
+        service.users().dataSets().patch(
+            userId="me", dataSourceId=ds_id,
+            datasetId=f"{ns}-{ns}", body=body,
+        ).execute()
+        return True
+    except Exception as e:
+        _log(db, "google_fit", "vital_sign", record.id, "error", str(e))
         return False
 
 

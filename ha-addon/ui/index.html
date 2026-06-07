@@ -451,7 +451,7 @@ tr:hover td{background:var(--hover-bg)}
     <p style="font-size:13px;margin-bottom:8px;color:var(--gray-700)">To enable Google sync:</p>
     <ol style="font-size:13px;color:var(--gray-700);padding-left:20px;line-height:2">
       <li>Open <a href="https://console.cloud.google.com/" target="_blank" style="color:var(--primary)">Google Cloud Console</a></li>
-      <li>Enable <strong>Google Fitness API</strong>, <strong>Google Sheets API</strong>, and <strong>Google Drive API</strong></li>
+      <li>Enable <strong>Google Health API</strong>, <strong>Google Sheets API</strong>, and <strong>Google Drive API</strong></li>
       <li>Create OAuth 2.0 credentials → Web application</li>
       <li>Add authorized redirect URI: <code style="background:var(--gray-100);padding:1px 5px;border-radius:4px">http://&lt;ha-ip&gt;:8099/auth/google/callback</code></li>
       <li>Set credentials in addon options (⚙️ Configuration tab in HA)</li>
@@ -632,7 +632,7 @@ function bmiBadge(v) {
   return b('danger','Obese');
 }
 function syncBadges(fit, sheets) {
-  return (fit ? b('success','Fit') : b('gray','Fit')) + ' ' +
+  return (fit ? b('success','Health') : b('gray','Health')) + ' ' +
          (sheets ? b('success','Sheets') : b('gray','Sheets'));
 }
 
@@ -906,10 +906,11 @@ function renderGoogle() {
     label.style.fontWeight = '';
     sec.innerHTML = `
       <p style="font-size:13px;color:var(--gray-700);margin-bottom:10px">
-        Connect your Google account to sync health data to Google Fit and Google Sheets.
+        Connect your Google account to sync health data to Google Health and Google Sheets.
       </p>
       <ul style="font-size:13px;color:var(--gray-500);list-style:disc;padding-left:20px;margin-bottom:14px;line-height:1.9">
-        <li><strong>Google Fit</strong> — weight, blood pressure, heart rate, blood glucose</li>
+        <li><strong>Google Health</strong> — weight, heart rate, blood glucose</li>
+        <li><strong>Google Fit</strong> — blood pressure (Google Health API v4 does not support blood pressure yet)</li>
         <li><strong>Google Sheets</strong> — all metrics including cholesterol, uric acid, HbA1c</li>
       </ul>
       <a href="auth/google/login" class="btn btn-primary">Connect Google Account</a>`;
@@ -1017,9 +1018,9 @@ async function syncAll(btn) {
   btn.disabled=true; btn.textContent='⏳ Syncing…';
   try {
     const r = await req('POST','sync/all');
-    const fit = r.google_fit, sh = r.google_sheets;
+    const h = r.google_health, sh = r.google_sheets;
     showAlert('settingsAlert','success',
-      `✓ Sync complete! Fit → weight: ${fit.body_metrics}, vitals: ${fit.vital_signs}, labs: ${fit.lab_results} | Sheets → ${sh.body_metrics+sh.lab_results+sh.vital_signs} total records`);
+      `✓ Sync complete! Health → weight: ${h.body_metrics}, vitals: ${h.vital_signs}, labs: ${h.lab_results} | Sheets → ${sh.body_metrics+sh.lab_results+sh.vital_signs} total records`);
     await loadAll();
   } catch(e) { showAlert('settingsAlert','error','✗ Sync failed: '+e.message); }
   finally { btn.disabled=false; btn.textContent='↑ Sync All Data'; }

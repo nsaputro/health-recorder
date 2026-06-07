@@ -68,15 +68,15 @@ export default function Dashboard() {
             {syncMutation.isPending ? (
               '⏳ Syncing…'
             ) : (
-              <>↑ Sync All to Google</>
-            )}
+              <>↑ Sync All to Google Health</>
+  )}
           </button>
         )}
       </div>
 
       {syncMutation.isSuccess && (
         <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-3 text-sm">
-          ✅ Sync complete — Fit: {JSON.stringify(syncMutation.data?.google_fit)}, Sheets: {JSON.stringify(syncMutation.data?.google_sheets)}
+          ✅ Sync complete — Health: {JSON.stringify(syncMutation.data?.google_health)}, Sheets: {JSON.stringify(syncMutation.data?.google_sheets)}
         </div>
       )}
 

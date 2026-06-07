@@ -8,7 +8,7 @@
 
 Health Recorder lets you log and trend your own health data — body weight, blood pressure,
 heart rate, and lab results — without relying on third-party cloud services. Data lives in a
-local SQLite database that you own. Optional Google Fit and Google Sheets sync pushes data to
+local SQLite database that you own. Optional Google Health / Google Sheets sync pushes data to
 the services that do matter to you.
 
 It ships as a **Home Assistant addon** (sidebar panel, multi-user via HA ingress) and as a
@@ -238,7 +238,8 @@ status (success|error), records_synced, error_message, created_at
 - ✅ Vital signs: systolic/diastolic BP and heart rate (at least one required)
 - ✅ HA addon: sidebar panel, HA ingress support, port 8099 for OAuth redirect
 - ✅ Standalone: Docker Compose, single-user, FastAPI + React frontend
-- ✅ Google Fit sync: weight, blood pressure, heart rate, blood glucose
+- ✅ Google Health API v4 sync: weight, heart rate, blood glucose (migrated from Google Fit)
+- ✅ Google Fit sync: blood pressure only (no Health API equivalent yet)
 - ✅ Google Sheets sync: all metrics including cholesterol, HbA1c, uric acid
 - ✅ Vanilla-JS SPA: no build step, relative `fetch()` paths for ingress routing
 - ✅ HA-themed UI: HA primary blue, Material cards, Roboto font
