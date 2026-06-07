@@ -231,7 +231,7 @@ status (success|error), records_synced, error_message, created_at
 
 ## Core Features
 
-### Phase 1 — MVP (v0.1.x) ✅
+### MVP (v0.1.x) ✅
 
 - ✅ Body metrics tracking: weight, height, auto-computed BMI
 - ✅ Lab results: 10 test types with display names, units, and clinical reference ranges
@@ -247,7 +247,7 @@ status (success|error), records_synced, error_message, created_at
 - ✅ CI pipeline: yamllint + hadolint + Python syntax check + Docker build on every PR
 - ✅ Release pipeline: multi-arch (amd64 + aarch64) images + GitHub release
 
-### Phase 2 — Multi-user + Quality (v0.2.0) ✅
+### Multi-user + Quality (v0.2.0) ✅
 
 - ✅ Multi-user support: each HA user sees only their own data via `ha_user_id`
 - ✅ Impersonation prevention: `X-Remote-User-*` headers only trusted when `X-Ingress-Path` is also present (HA supervisor-injected)
@@ -257,7 +257,7 @@ status (success|error), records_synced, error_message, created_at
 - ✅ Unit tests: 34 ha-addon tests (CRUD, user isolation, impersonation) + 23 backend tests (CRUD, validation)
 - ✅ CI runs pytest on every push and PR before Docker build
 
-### Phase 3 — Trend Charts (v0.3.0) ✅
+### Trend Charts (v0.3.0) ✅
 
 - ✅ **Weight & BMI chart**: line chart showing weight (and BMI overlay) over time; reference BMI bands (underweight / normal / overweight / obese) as background shading
 - ✅ **Blood pressure chart**: dual-line chart for systolic and diastolic over time; reference lines at 120/80
@@ -268,55 +268,11 @@ status (success|error), records_synced, error_message, created_at
 - ✅ **Time-range filter**: 1 month / 3 months / 6 months / 1 year / all time; backed by `?since=` API param
 - ✅ **Trend summary**: Latest / Avg / Min / Max shown below each chart for the selected period
 
-### Phase 3b — Gender-Adjusted Lab Reference Ranges (v0.4.0) ✅
-
-- ✅ **User gender preference**: `GET/PUT /auth/preferences` endpoints store biological sex (`male` / `female` / `unset`) per HA user; globally for the standalone app
-- ✅ **Gender-adjusted ranges**: hemoglobin, creatinine, uric acid, and HDL cholesterol return gender-specific normal ranges when `?gender=` is passed to `/health/lab-types`
-- ✅ **`higher_better` flag**: added to `LabReferenceRange` schema (true for HDL cholesterol); removes special-case hardcoding from UI
-- ✅ **Reference Ranges tab**: new dedicated tab in both UIs listing all 10 lab tests with normal ranges (gender-adjusted if set), grouped by category, showing the user's most recent result alongside each range
-- ✅ **Gender selector in Settings**: button-group picker in the Settings panel of both UIs; saves preference immediately and reloads all lab-type data with the new gender
-- ✅ **Ref-range sub-line in lab table**: each result row shows a small "Normal: X–Y unit" hint below the result value in both UIs
-
-### Phase 3c — Unit Preference Settings (v0.4.0) ✅
-
-- ✅ **`lab_unit` preference**: `mg_dl` | `mmol` — stored in `user_preferences`; applies to cholesterol, triglycerides, glucose, and uric acid; HbA1c / creatinine / hemoglobin unaffected
-- ✅ **`weight_unit` preference**: `kg` | `lb` — display-only (stored values always in kg)
-- ✅ **Conversion hint in tables**: when stored unit differs from preferred unit, both values shown (e.g. `200 mg/dL (5.17 mmol/L)`)
-- ✅ **Unit picker in Settings**: "Display Units" card with button-group pickers for lab unit and weight unit; immediate save, works in both UIs
-- ✅ **Form defaults to preferred unit**: lab entry form unit dropdown pre-selects the preferred unit (mg/dL or mmol/L) when a test type is chosen
-- ✅ **Live lb hint in weight form**: weight entry shows live kg → lb conversion hint when `lb` is preferred
-- ✅ **Reference Ranges tab**: lab ranges displayed in preferred unit (converted from mg/dL); user's latest result also shows conversion hint
-- ✅ **Backend partial update**: `PUT /auth/preferences` now accepts any subset of `{gender, lab_unit, weight_unit}` — unchanged fields are preserved
-
-### Phase 3d — HbA1c mmol/mol Unit Support (v0.4.1) ✅
-
-- ✅ **`mmol/mol` as selectable unit for HbA1c**: entry form now offers both `%` (DCCT) and `mmol/mol` (IFCC); form pre-selects `mmol/mol` when `lab_unit` preference is `mmol`
-- ✅ **HbA1c conversion hints in tables**: when stored in `mmol/mol`, shows `(X %)` hint; when stored in `%` and mmol preferred, shows `(X mmol/mol)` hint; uses affine formula `% = 0.09148 × mmol/mol + 2.152`
-- ✅ **HbA1c range hint in form**: reference range hint below the value field converts to `mmol/mol` when that unit is selected (Normal: 31–39 mmol/mol · Border: ≤ 47)
-- ✅ **HbA1c status badge fix**: Normal/Borderline/High badge normalises `mmol/mol` values to `%` before comparing against `%` reference ranges (both React frontend and HA addon)
-
-### Phase 3e — Sync UX Polish (v0.3.2) ✅
+### Sync UX Polish (v0.3.2) ✅
 
 - ✅ **Sync columns hidden when disconnected**: Sync status column, per-row Sync button, and the status bar indicator are hidden in all data tables when Google sync is not configured or not connected; reappear automatically once a Google account is linked from Settings
 
-### Phase 3f — Chart & Form Quality (v0.4.2) ✅
-
-- ✅ **Lab chart unit normalization**: chart and trend stats normalize stored values to the reference unit (mg/dL, %, g/dL, U/L) before plotting, so records stored in mmol/L, µmol/L, g/L, or mmol/mol are displayed at the correct scale matching the y-axis label and reference lines
-- ✅ **Date-only entry forms**: all entry forms changed from `datetime-local` to `date` input; timestamps default to midnight UTC on the chosen date (simpler, avoids timezone confusion)
-- ✅ **Reference Ranges — date for latest result**: a small muted date (e.g. "Jun 6, 2026") is shown below the latest result value in the Your Latest column of both UIs
-- ✅ **Reference Ranges — unfiltered latest result**: the Your Latest column always reflects the most recent record regardless of the active time-range filter (uses a separate unfiltered fetch)
-- ✅ **Status badge normalisation for all alternate units**: Normal/Borderline/High/Low badges correctly handle mmol/L → mg/dL for cholesterol/glucose/uric acid, µmol/L → mg/dL for creatinine, and g/L → g/dL for hemoglobin before comparing against reference range thresholds
-- ✅ **Conversion hints for creatinine and hemoglobin**: alternate-unit hints now appear for creatinine (mg/dL ↔ µmol/L, factor 88.42) and hemoglobin (g/dL ↔ g/L, factor 10)
-
-### Phase 3g — Extended Lab Tests (v0.4.3) 🔄
-
-- ✅ **ALT liver function test**: new lab test type `alt` (ALT / SGPT, U/L) with reference range 7–56 U/L normal (female ≤ 45), borderline ≤ 112 (female ≤ 90); gender-adjusted ranges supported
-- ✅ **ALP liver function test**: new lab test type `alp` (ALP / Alk Phos, U/L) with reference range 44–147 U/L normal, borderline ≤ 200
-- ✅ **"Liver" category in Reference Ranges tab**: ALT and ALP grouped under a new Liver section in both UIs
-- ✅ **Alternative clinical names in Reference Ranges**: each test shows its common alternative name as small muted text (e.g. SGPT under ALT, Alk Phos under ALP, A1C under HbA1c, FBS/FPG under Fasting Glucose, SCr under Creatinine, Hb/Hgb under Hemoglobin)
-- ✅ **Info icon in Reference Ranges**: a ⓘ button next to each test name reveals a brief description of what the test measures and its clinical significance (hover tooltip on React; click-to-toggle popover on HA addon)
-
-### Phase 4 — Frontend Modernisation (v0.4.0) ✅
+### Frontend Modernisation (v0.3.3) ✅
 
 Upgrade the standalone `frontend/` to the latest major versions. The HA addon's vanilla-JS UI
 is unaffected (no build step to break).
@@ -336,6 +292,50 @@ Migration steps (in order):
 - ✅ Upgrade React Router 6 → 7: library-mode API unchanged; no code edits needed
 - ✅ Update all `@types/*` packages; ESLint 9 flat config (`eslint.config.js`) created
 - ✅ `npm run build` passes (zero TS errors); `npm run lint` passes (zero errors)
+
+### Gender-Adjusted Lab Reference Ranges (v0.4.0) ✅
+
+- ✅ **User gender preference**: `GET/PUT /auth/preferences` endpoints store biological sex (`male` / `female` / `unset`) per HA user; globally for the standalone app
+- ✅ **Gender-adjusted ranges**: hemoglobin, creatinine, uric acid, and HDL cholesterol return gender-specific normal ranges when `?gender=` is passed to `/health/lab-types`
+- ✅ **`higher_better` flag**: added to `LabReferenceRange` schema (true for HDL cholesterol); removes special-case hardcoding from UI
+- ✅ **Reference Ranges tab**: new dedicated tab in both UIs listing all 10 lab tests with normal ranges (gender-adjusted if set), grouped by category, showing the user's most recent result alongside each range
+- ✅ **Gender selector in Settings**: button-group picker in the Settings panel of both UIs; saves preference immediately and reloads all lab-type data with the new gender
+- ✅ **Ref-range sub-line in lab table**: each result row shows a small "Normal: X–Y unit" hint below the result value in both UIs
+
+### Unit Preference Settings (v0.4.0) ✅
+
+- ✅ **`lab_unit` preference**: `mg_dl` | `mmol` — stored in `user_preferences`; applies to cholesterol, triglycerides, glucose, and uric acid; HbA1c / creatinine / hemoglobin unaffected
+- ✅ **`weight_unit` preference**: `kg` | `lb` — display-only (stored values always in kg)
+- ✅ **Conversion hint in tables**: when stored unit differs from preferred unit, both values shown (e.g. `200 mg/dL (5.17 mmol/L)`)
+- ✅ **Unit picker in Settings**: "Display Units" card with button-group pickers for lab unit and weight unit; immediate save, works in both UIs
+- ✅ **Form defaults to preferred unit**: lab entry form unit dropdown pre-selects the preferred unit (mg/dL or mmol/L) when a test type is chosen
+- ✅ **Live lb hint in weight form**: weight entry shows live kg → lb conversion hint when `lb` is preferred
+- ✅ **Reference Ranges tab**: lab ranges displayed in preferred unit (converted from mg/dL); user's latest result also shows conversion hint
+- ✅ **Backend partial update**: `PUT /auth/preferences` now accepts any subset of `{gender, lab_unit, weight_unit}` — unchanged fields are preserved
+
+### HbA1c mmol/mol Unit Support (v0.4.1) ✅
+
+- ✅ **`mmol/mol` as selectable unit for HbA1c**: entry form now offers both `%` (DCCT) and `mmol/mol` (IFCC); form pre-selects `mmol/mol` when `lab_unit` preference is `mmol`
+- ✅ **HbA1c conversion hints in tables**: when stored in `mmol/mol`, shows `(X %)` hint; when stored in `%` and mmol preferred, shows `(X mmol/mol)` hint; uses affine formula `% = 0.09148 × mmol/mol + 2.152`
+- ✅ **HbA1c range hint in form**: reference range hint below the value field converts to `mmol/mol` when that unit is selected (Normal: 31–39 mmol/mol · Border: ≤ 47)
+- ✅ **HbA1c status badge fix**: Normal/Borderline/High badge normalises `mmol/mol` values to `%` before comparing against `%` reference ranges (both React frontend and HA addon)
+
+### Chart & Form Quality (v0.4.2) ✅
+
+- ✅ **Lab chart unit normalization**: chart and trend stats normalize stored values to the reference unit (mg/dL, %, g/dL, U/L) before plotting, so records stored in mmol/L, µmol/L, g/L, or mmol/mol are displayed at the correct scale matching the y-axis label and reference lines
+- ✅ **Date-only entry forms**: all entry forms changed from `datetime-local` to `date` input; timestamps default to midnight UTC on the chosen date (simpler, avoids timezone confusion)
+- ✅ **Reference Ranges — date for latest result**: a small muted date (e.g. "Jun 6, 2026") is shown below the latest result value in the Your Latest column of both UIs
+- ✅ **Reference Ranges — unfiltered latest result**: the Your Latest column always reflects the most recent record regardless of the active time-range filter (uses a separate unfiltered fetch)
+- ✅ **Status badge normalisation for all alternate units**: Normal/Borderline/High/Low badges correctly handle mmol/L → mg/dL for cholesterol/glucose/uric acid, µmol/L → mg/dL for creatinine, and g/L → g/dL for hemoglobin before comparing against reference range thresholds
+- ✅ **Conversion hints for creatinine and hemoglobin**: alternate-unit hints now appear for creatinine (mg/dL ↔ µmol/L, factor 88.42) and hemoglobin (g/dL ↔ g/L, factor 10)
+
+### Extended Lab Tests (v0.4.3) 🔄
+
+- ✅ **ALT liver function test**: new lab test type `alt` (ALT / SGPT, U/L) with reference range 7–56 U/L normal (female ≤ 45), borderline ≤ 112 (female ≤ 90); gender-adjusted ranges supported
+- ✅ **ALP liver function test**: new lab test type `alp` (ALP / Alk Phos, U/L) with reference range 44–147 U/L normal, borderline ≤ 200
+- ✅ **"Liver" category in Reference Ranges tab**: ALT and ALP grouped under a new Liver section in both UIs
+- ✅ **Alternative clinical names in Reference Ranges**: each test shows its common alternative name as small muted text (e.g. SGPT under ALT, Alk Phos under ALP, A1C under HbA1c, FBS/FPG under Fasting Glucose, SCr under Creatinine, Hb/Hgb under Hemoglobin)
+- ✅ **Info icon in Reference Ranges**: a ⓘ button next to each test name reveals a brief description of what the test measures and its clinical significance (hover tooltip on React; click-to-toggle popover on HA addon)
 
 ---
 
