@@ -129,23 +129,25 @@ export default function ReferenceRangesPage() {
                       return (
                         <tr key={r.test_type} className="hover:bg-gray-50">
                           <td className="py-2.5 pr-6">
-                            <div className="font-medium">{r.display_name}</div>
+                            <div className="font-medium">
+                              {r.display_name}
+                              {LAB_DESCRIPTIONS[r.test_type] && (
+                                <span className="relative inline-block group ml-1">
+                                  <button
+                                    type="button"
+                                    className="text-gray-400 hover:text-blue-500 focus:text-blue-500 focus:outline-none text-sm leading-none"
+                                    aria-label={`About ${r.display_name}`}
+                                  >
+                                    ⓘ
+                                  </button>
+                                  <div className="invisible group-hover:visible group-focus-within:visible absolute left-0 top-5 z-50 w-64 p-3 rounded-lg bg-white border border-gray-200 shadow-lg text-xs text-gray-600 font-normal whitespace-normal">
+                                    {LAB_DESCRIPTIONS[r.test_type]}
+                                  </div>
+                                </span>
+                              )}
+                            </div>
                             {LAB_ALT_NAMES[r.test_type] && (
                               <div className="text-xs text-gray-400">{LAB_ALT_NAMES[r.test_type]}</div>
-                            )}
-                            {LAB_DESCRIPTIONS[r.test_type] && (
-                              <div className="relative inline-block group mt-0.5">
-                                <button
-                                  type="button"
-                                  className="text-gray-400 hover:text-blue-500 focus:text-blue-500 focus:outline-none text-sm leading-none"
-                                  aria-label={`About ${r.display_name}`}
-                                >
-                                  ⓘ
-                                </button>
-                                <div className="invisible group-hover:visible group-focus-within:visible absolute left-0 top-5 z-50 w-64 p-3 rounded-lg bg-white border border-gray-200 shadow-lg text-xs text-gray-600 font-normal whitespace-normal">
-                                  {LAB_DESCRIPTIONS[r.test_type]}
-                                </div>
-                              </div>
                             )}
                           </td>
                           <td className="py-2.5 pr-6 text-gray-600">{refRangeText(r)}</td>
