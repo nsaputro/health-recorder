@@ -580,10 +580,31 @@ function weightHint(kg) {
 }
 
 function resolvedRange(r) {
-  if (S.prefs?.lab_unit !== 'mmol' || !MMOL_FACTORS[r.test_type]) return r;
+  const wantsMmol = S.prefs?.lab_unit === 'mmol';
+  const cv = (v, factor, precision) => (v != null && v < 900) ? Math.round(v * factor * precision) / precision : v;
+
   const f = MMOL_FACTORS[r.test_type];
-  const c = v => (v != null && v < 900) ? Math.round(v * f * 100) / 100 : v;
-  return { ...r, unit: 'mmol/L', low: c(r.low), normal_max: c(r.normal_max), borderline_max: c(r.borderline_max) };
+  if (f) {
+    if (!wantsMmol) return r;
+    return { ...r, unit: 'mmol/L', low: cv(r.low, f, 100), normal_max: cv(r.normal_max, f, 100), borderline_max: cv(r.borderline_max, f, 100) };
+  }
+  if (r.test_type === 'phosphate' && !wantsMmol) {
+    return { ...r, unit: 'mg/dL', low: cv(r.low, 3.097, 10), normal_max: cv(r.normal_max, 3.097, 10), borderline_max: cv(r.borderline_max, 3.097, 10) };
+  }
+  if (!wantsMmol) return r;
+  if (r.test_type === 'glucose_hba1c') {
+    const toM = v => (v != null && v > 0 && v < 900) ? hba1cToMmolMol(v) : v;
+    return { ...r, unit: 'mmol/mol', low: toM(r.low), normal_max: toM(r.normal_max), borderline_max: toM(r.borderline_max) };
+  }
+  if (r.test_type === 'creatinine')
+    return { ...r, unit: 'µmol/L', low: cv(r.low, 88.42, 1), normal_max: cv(r.normal_max, 88.42, 1), borderline_max: cv(r.borderline_max, 88.42, 1) };
+  if (r.test_type === 'vitamin_d')
+    return { ...r, unit: 'nmol/L', low: cv(r.low, 2.496, 10), normal_max: cv(r.normal_max, 2.496, 10), borderline_max: cv(r.borderline_max, 2.496, 10) };
+  if (r.test_type === 'hemoglobin' || r.test_type === 'albumin')
+    return { ...r, unit: 'g/L', low: cv(r.low, 10, 10), normal_max: cv(r.normal_max, 10, 10), borderline_max: cv(r.borderline_max, 10, 10) };
+  if (r.test_type === 'urine_creatinine')
+    return { ...r, unit: 'mmol/L', low: cv(r.low, 0.08842, 100), normal_max: cv(r.normal_max, 0.08842, 100), borderline_max: cv(r.borderline_max, 0.08842, 100) };
+  return r;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
