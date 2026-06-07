@@ -47,10 +47,7 @@ class Settings:
         "https://www.googleapis.com/auth/userinfo.profile",
         # Google Health API v4 — weight, heart rate, blood glucose
         "https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements",
-        # Google Fit — blood pressure only (no Health API v4 equivalent yet)
-        "https://www.googleapis.com/auth/fitness.blood_pressure.read",
-        "https://www.googleapis.com/auth/fitness.blood_pressure.write",
-        # Google Sheets
+        # Google Sheets — all metrics
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive.file",
     ]

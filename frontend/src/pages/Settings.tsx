@@ -215,8 +215,7 @@ export default function SettingsPage() {
             </p>
             <ul className="text-sm text-gray-500 space-y-1 list-disc list-inside">
               <li><strong>Google Health</strong> — weight, heart rate, blood glucose</li>
-              <li><strong>Google Fit</strong> — blood pressure (no Google Health API equivalent yet)</li>
-              <li><strong>Google Sheets</strong> — all metrics including cholesterol, uric acid, HbA1c</li>
+              <li><strong>Google Sheets</strong> — all metrics including cholesterol, blood pressure, uric acid, HbA1c</li>
             </ul>
             <a
               href="/api/auth/google/login"
@@ -235,7 +234,7 @@ export default function SettingsPage() {
           <p className="font-medium">To enable Google sync:</p>
           <ol className="list-decimal list-inside space-y-2">
             <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a></li>
-            <li>Create a project and enable the <strong>Google Health API</strong>, <strong>Google Fitness API</strong>, and <strong>Google Sheets API</strong></li>
+            <li>Create a project and enable the <strong>Google Health API</strong> and <strong>Google Sheets API</strong></li>
             <li>Create OAuth 2.0 credentials (Web application type)</li>
             <li>Add <code className="bg-gray-100 px-1 rounded">http://localhost:8000/auth/google/callback</code> as an authorized redirect URI</li>
             <li>Set <code className="bg-gray-100 px-1 rounded">GOOGLE_CLIENT_ID</code> and <code className="bg-gray-100 px-1 rounded">GOOGLE_CLIENT_SECRET</code> in backend <code className="bg-gray-100 px-1 rounded">.env</code></li>

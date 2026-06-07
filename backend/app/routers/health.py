@@ -75,7 +75,7 @@ def update_body_metric(record_id: int, payload: BodyMetricCreate, db: Session = 
     record.height_cm = payload.height_cm
     record.bmi = _compute_bmi(payload.weight_kg, payload.height_cm)
     record.notes = payload.notes
-    record.synced_to_fit = False
+    record.synced_to_google = False
     record.synced_to_sheets = False
     db.commit()
     db.refresh(record)
@@ -140,7 +140,7 @@ def update_lab_result(record_id: int, payload: LabResultCreate, db: Session = De
         raise HTTPException(status_code=404, detail="Record not found")
     for field in ("measured_at", "test_type", "value", "unit", "lab_name", "notes"):
         setattr(record, field, getattr(payload, field))
-    record.synced_to_fit = False
+    record.synced_to_google = False
     record.synced_to_sheets = False
     db.commit()
     db.refresh(record)
@@ -201,7 +201,7 @@ def update_vital_sign(record_id: int, payload: VitalSignCreate, db: Session = De
         raise HTTPException(status_code=404, detail="Record not found")
     for field in ("measured_at", "systolic_bp", "diastolic_bp", "heart_rate", "notes"):
         setattr(record, field, getattr(payload, field))
-    record.synced_to_fit = False
+    record.synced_to_google = False
     record.synced_to_sheets = False
     db.commit()
     db.refresh(record)

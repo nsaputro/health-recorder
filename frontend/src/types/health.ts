@@ -5,7 +5,7 @@ export interface BodyMetric {
   height_cm: number | null
   bmi: number | null
   notes: string | null
-  synced_to_fit: boolean
+  synced_to_google: boolean
   synced_to_sheets: boolean
   created_at: string
 }
@@ -25,7 +25,7 @@ export interface LabResult {
   unit: string
   lab_name: string | null
   notes: string | null
-  synced_to_fit: boolean
+  synced_to_google: boolean
   synced_to_sheets: boolean
   created_at: string
 }
@@ -46,7 +46,7 @@ export interface VitalSign {
   diastolic_bp: number | null
   heart_rate: number | null
   notes: string | null
-  synced_to_fit: boolean
+  synced_to_google: boolean
   synced_to_sheets: boolean
   created_at: string
 }

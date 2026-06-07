@@ -33,7 +33,7 @@ class BodyMetricRead(BaseModel):
     height_cm: Optional[float]
     bmi: Optional[float]
     notes: Optional[str]
-    synced_to_fit: bool
+    synced_to_google: bool
     synced_to_sheets: bool
     created_at: datetime
 
@@ -152,7 +152,7 @@ class LabResultRead(BaseModel):
     unit: str
     lab_name: Optional[str]
     notes: Optional[str]
-    synced_to_fit: bool
+    synced_to_google: bool
     synced_to_sheets: bool
     created_at: datetime
 
@@ -183,7 +183,7 @@ class VitalSignRead(BaseModel):
     diastolic_bp: Optional[int]
     heart_rate: Optional[int]
     notes: Optional[str]
-    synced_to_fit: bool
+    synced_to_google: bool
     synced_to_sheets: bool
     created_at: datetime
 
