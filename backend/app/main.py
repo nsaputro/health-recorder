@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Health Recorder API",
-    description="Personal health data recorder with Google Fit and Google Sheets sync",
+    description="Personal health data recorder with Google Health and Google Sheets sync",
     version="1.0.0",
     lifespan=lifespan,
 )

@@ -41,7 +41,7 @@ class BodyMetric(Base):
     height_cm = Column(Float, nullable=True)  # optional, used to compute BMI
     bmi = Column(Float, nullable=True)  # computed on insert
     notes = Column(Text, nullable=True)
-    synced_to_fit = Column(Boolean, default=False)
+    synced_to_google = Column(Boolean, default=False)
     synced_to_sheets = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -58,7 +58,7 @@ class LabResult(Base):
     unit = Column(String(32), nullable=False)  # e.g. mg/dL, mmol/L, %
     lab_name = Column(String(128), nullable=True)
     notes = Column(Text, nullable=True)
-    synced_to_fit = Column(Boolean, default=False)
+    synced_to_google = Column(Boolean, default=False)
     synced_to_sheets = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -74,7 +74,7 @@ class VitalSign(Base):
     diastolic_bp = Column(Integer, nullable=True)  # mmHg
     heart_rate = Column(Integer, nullable=True)    # bpm
     notes = Column(Text, nullable=True)
-    synced_to_fit = Column(Boolean, default=False)
+    synced_to_google = Column(Boolean, default=False)
     synced_to_sheets = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -100,7 +100,7 @@ class SyncLog(Base):
     __tablename__ = "sync_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    sync_type = Column(String(32), nullable=False)   # "google_fit" | "google_sheets"
+    sync_type = Column(String(32), nullable=False)   # "google_health" | "google_sheets"
     record_type = Column(String(32), nullable=False) # "body_metric" | "lab_result" | "vital_sign"
     record_id = Column(Integer, nullable=False)
     status = Column(String(16), nullable=False)      # "success" | "error"

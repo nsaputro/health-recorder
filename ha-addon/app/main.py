@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Health Recorder",
-    description="Personal health data recorder with Google Fit & Sheets sync",
+    description="Personal health data recorder with Google Health & Sheets sync",
     version="1.0.0",
     lifespan=lifespan,
     # Put Swagger docs under /docs so the catch-all doesn't swallow them

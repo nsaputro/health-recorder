@@ -808,7 +808,7 @@ function renderWeights() {
       <td>${fmt(r.measured_at)}</td>
       <td><strong>${r.weight_kg} kg</strong>${wh?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${wh}</span>`:''}</td>
       <td>${r.bmi ? r.bmi+' '+bmiBadge(r.bmi) : '—'}</td>
-      ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
+      ${ss?`<td>${syncBadges(r.synced_to_google,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
         ${ss?`<button onclick="syncRec('body-metrics',${r.id})">Sync</button>`:''}
         <button class="icon-btn" title="Delete" onclick="delRec('body-metrics',${r.id})">${TRASH_ICON}</button>
@@ -836,7 +836,7 @@ function renderLabs() {
       <td><strong>${r.value} ${r.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''}${S.labTypeMap[r.test_type]?`<div class="ref-range">${refRangeText(S.labTypeMap[r.test_type],true)}</div>`:''}</td>
       <td>${labBadge(r.test_type,r.value,r.unit)}</td>
       <td style="color:var(--text-secondary)">${r.lab_name??'—'}</td>
-      ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
+      ${ss?`<td>${syncBadges(r.synced_to_google,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
         ${ss?`<button onclick="syncRec('lab-results',${r.id})">Sync</button>`:''}
         <button class="icon-btn" title="Delete" onclick="delRec('lab-results',${r.id})">${TRASH_ICON}</button>
@@ -859,7 +859,7 @@ function renderVitals() {
       <td>${r.systolic_bp&&r.diastolic_bp ? '<strong>'+r.systolic_bp+'/'+r.diastolic_bp+'</strong> mmHg' : '—'}</td>
       <td>${bpBadge(r.systolic_bp,r.diastolic_bp)}</td>
       <td>${r.heart_rate ? r.heart_rate+' bpm' : '—'}</td>
-      ${ss?`<td>${syncBadges(r.synced_to_fit,r.synced_to_sheets)}</td>`:''}
+      ${ss?`<td>${syncBadges(r.synced_to_google,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
         ${ss?`<button onclick="syncRec('vital-signs',${r.id})">Sync</button>`:''}
         <button class="icon-btn" title="Delete" onclick="delRec('vital-signs',${r.id})">${TRASH_ICON}</button>

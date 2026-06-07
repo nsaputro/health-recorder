@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A personal health data recorder with Google Fit and Google Sheets sync.
+A personal health data recorder with Google Health and Google Sheets sync.
 
 Available as a **Home Assistant addon** (sidebar panel, multi-user) or as a **standalone app** (Docker Compose).
 
@@ -17,7 +17,7 @@ The HA addon is the primary way to run Health Recorder. It appears as a **Health
 - **Multi-user** — each HA user gets their own isolated data; authentication is automatic via HA's ingress (no login form)
 - **Native look** — UI matches HA's color palette, Material card style, Roboto font, and dark mode
 - **Sidebar panel** — accessible from anywhere in HA via ingress
-- **Google sync** — optional Google Fit + Sheets sync, per user
+- **Google sync** — optional Google Health + Sheets sync, per user
 - **Persistent storage** — data lives at `/data/health_recorder.db`, survives addon updates
 
 ### Installation
@@ -38,10 +38,10 @@ The HA addon is the primary way to run Health Recorder. It appears as a **Health
 
 ### What syncs where
 
-| Metric | Google Fit | Google Sheets |
-|--------|-----------|---------------|
+| Metric | Google Health | Google Sheets |
+|--------|--------------|---------------|
 | Body weight / BMI | ✅ | ✅ |
-| Blood pressure | ✅ | ✅ |
+| Blood pressure | — ¹ | ✅ |
 | Heart rate | ✅ | ✅ |
 | Blood glucose | ✅ | ✅ |
 | Cholesterol (LDL / HDL / Total) | — | ✅ |
@@ -49,19 +49,21 @@ The HA addon is the primary way to run Health Recorder. It appears as a **Health
 | HbA1c | — | ✅ |
 | Uric acid | — | ✅ |
 
+¹ The Google Health API v4 has no blood pressure data type. Blood pressure is recorded locally and synced to Google Sheets only.
+
 ---
 
 ## 📊 Tracked Metrics
 
-| Metric | Record | Chart | Google Fit | Google Sheets |
-|--------|--------|-------|-----------|---------------|
+| Metric | Record | Chart | Google Health | Google Sheets |
+|--------|--------|-------|--------------|---------------|
 | Body weight & BMI | ✅ | ✅ | ✅ | ✅ |
 | Total / LDL / HDL Cholesterol | ✅ | ✅ | — | ✅ |
 | Triglycerides | ✅ | ✅ | — | ✅ |
 | Fasting / Random Glucose | ✅ | ✅ | ✅ | ✅ |
 | HbA1c | ✅ | ✅ | — | ✅ |
 | Uric Acid | ✅ | ✅ | — | ✅ |
-| Blood Pressure | ✅ | ✅ | ✅ | ✅ |
+| Blood Pressure | ✅ | ✅ | — ¹ | ✅ |
 | Heart Rate | ✅ | ✅ | ✅ | ✅ |
 
 ---
@@ -155,7 +157,7 @@ health-recorder/
 │   │   ├── dependencies.py      # HAUser + get_ha_user() dependency
 │   │   ├── models/health.py     # ORM models (with ha_user_id)
 │   │   ├── routers/             # health, auth, sync
-│   │   └── services/            # google_auth, google_fit, google_sheets
+│   │   └── services/            # google_auth, google_health, google_sheets
 │   └── ui/index.html            # Vanilla-JS SPA (no build step)
 ├── backend/                     # Standalone FastAPI backend
 │   └── app/

@@ -1,8 +1,8 @@
 name: "Health Recorder (dev)"
 description: >-
   [DEV CHANNEL] Track body weight, lab results (cholesterol, glucose, uric acid),
-  blood pressure, and heart rate with optional Google Fit & Sheets sync.
-version: "0.4.4b2"
+  blood pressure, and heart rate with optional Google Health & Sheets sync.
+version: "0.4.4b3"
 slug: "health_recorder_dev"
 homeassistant: "2024.1.0"
 url: "https://github.com/nsaputro/health-recorder"

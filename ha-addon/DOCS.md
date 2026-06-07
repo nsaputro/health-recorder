@@ -2,7 +2,7 @@
 
 Track body weight, lab results (cholesterol, glucose, uric acid), blood pressure, and heart rate — all from your Home Assistant sidebar.
 
-Data is stored locally in `/data/health_recorder.db` and can optionally be synced to **Google Fit** and **Google Sheets**.
+Data is stored locally in `/data/health_recorder.db` and can optionally be synced to **Google Health** and **Google Sheets**.
 
 ---
 
@@ -18,14 +18,14 @@ Data is stored locally in `/data/health_recorder.db` and can optionally be synce
 
 ## Google Sync (optional)
 
-To sync data to Google Fit and Google Sheets:
+To sync data to Google Health and Google Sheets:
 
 ### 1. Create Google Cloud credentials
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a project or select an existing one
 3. Enable these APIs:
-   - **Google Fitness API**
+   - **Google Health API**
    - **Google Sheets API**
    - **Google Drive API**
 4. Go to **Credentials → Create Credentials → OAuth 2.0 Client ID**
@@ -52,10 +52,10 @@ Restart the add-on, then open the **Health** panel → **Settings** → **Connec
 
 ## What syncs where
 
-| Metric | Google Fit | Google Sheets |
-|--------|-----------|---------------|
+| Metric | Google Health | Google Sheets |
+|--------|--------------|---------------|
 | Body weight | ✅ | ✅ |
-| Blood pressure | ✅ | ✅ |
+| Blood pressure | — ¹ | ✅ |
 | Heart rate | ✅ | ✅ |
 | Blood glucose (fasting/random) | ✅ | ✅ |
 | Cholesterol (LDL/HDL/Total) | — | ✅ |
@@ -63,7 +63,7 @@ Restart the add-on, then open the **Health** panel → **Settings** → **Connec
 | HbA1c | — | ✅ |
 | Uric acid | — | ✅ |
 
-> Google Fit only supports a subset of lab types natively. All metrics are always synced to Google Sheets.
+¹ The Google Health API v4 has no blood pressure data type. All metrics including blood pressure are always synced to Google Sheets.
 
 ---
 
