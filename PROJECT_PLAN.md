@@ -165,7 +165,7 @@ synced_to_fit, synced_to_sheets, created_at, updated_at
 
 Supported `test_type` values: `cholesterol_total`, `cholesterol_ldl`, `cholesterol_hdl`,
 `triglycerides`, `glucose_fasting`, `glucose_random`, `glucose_hba1c`, `uric_acid`,
-`creatinine`, `hemoglobin`, `other`.
+`creatinine`, `hemoglobin`, `alt`, `alp`, `other`.
 
 ### `vital_signs`
 
@@ -247,7 +247,7 @@ status (success|error), records_synced, error_message, created_at
 - ✅ CI pipeline: yamllint + hadolint + Python syntax check + Docker build on every PR
 - ✅ Release pipeline: multi-arch (amd64 + aarch64) images + GitHub release
 
-### Phase 2 — Multi-user + Quality (v0.2.0) 🔄
+### Phase 2 — Multi-user + Quality (v0.2.0) ✅
 
 - ✅ Multi-user support: each HA user sees only their own data via `ha_user_id`
 - ✅ Impersonation prevention: `X-Remote-User-*` headers only trusted when `X-Ingress-Path` is also present (HA supervisor-injected)
@@ -257,7 +257,7 @@ status (success|error), records_synced, error_message, created_at
 - ✅ Unit tests: 34 ha-addon tests (CRUD, user isolation, impersonation) + 23 backend tests (CRUD, validation)
 - ✅ CI runs pytest on every push and PR before Docker build
 
-### Phase 3 — Trend Charts (v0.3.0) 🔄
+### Phase 3 — Trend Charts (v0.3.0) ✅
 
 - ✅ **Weight & BMI chart**: line chart showing weight (and BMI overlay) over time; reference BMI bands (underweight / normal / overweight / obese) as background shading
 - ✅ **Blood pressure chart**: dual-line chart for systolic and diastolic over time; reference lines at 120/80
@@ -288,12 +288,33 @@ status (success|error), records_synced, error_message, created_at
 - ✅ **Reference Ranges tab**: lab ranges displayed in preferred unit (converted from mg/dL); user's latest result also shows conversion hint
 - ✅ **Backend partial update**: `PUT /auth/preferences` now accepts any subset of `{gender, lab_unit, weight_unit}` — unchanged fields are preserved
 
-### Phase 3d — HbA1c mmol/mol Unit Support (v0.4.1)
+### Phase 3d — HbA1c mmol/mol Unit Support (v0.4.1) ✅
 
 - ✅ **`mmol/mol` as selectable unit for HbA1c**: entry form now offers both `%` (DCCT) and `mmol/mol` (IFCC); form pre-selects `mmol/mol` when `lab_unit` preference is `mmol`
 - ✅ **HbA1c conversion hints in tables**: when stored in `mmol/mol`, shows `(X %)` hint; when stored in `%` and mmol preferred, shows `(X mmol/mol)` hint; uses affine formula `% = 0.09148 × mmol/mol + 2.152`
 - ✅ **HbA1c range hint in form**: reference range hint below the value field converts to `mmol/mol` when that unit is selected (Normal: 31–39 mmol/mol · Border: ≤ 47)
 - ✅ **HbA1c status badge fix**: Normal/Borderline/High badge normalises `mmol/mol` values to `%` before comparing against `%` reference ranges (both React frontend and HA addon)
+
+### Phase 3e — Sync UX Polish (v0.3.2) ✅
+
+- ✅ **Sync columns hidden when disconnected**: Sync status column, per-row Sync button, and the status bar indicator are hidden in all data tables when Google sync is not configured or not connected; reappear automatically once a Google account is linked from Settings
+
+### Phase 3f — Chart & Form Quality (v0.4.2) ✅
+
+- ✅ **Lab chart unit normalization**: chart and trend stats normalize stored values to the reference unit (mg/dL, %, g/dL, U/L) before plotting, so records stored in mmol/L, µmol/L, g/L, or mmol/mol are displayed at the correct scale matching the y-axis label and reference lines
+- ✅ **Date-only entry forms**: all entry forms changed from `datetime-local` to `date` input; timestamps default to midnight UTC on the chosen date (simpler, avoids timezone confusion)
+- ✅ **Reference Ranges — date for latest result**: a small muted date (e.g. "Jun 6, 2026") is shown below the latest result value in the Your Latest column of both UIs
+- ✅ **Reference Ranges — unfiltered latest result**: the Your Latest column always reflects the most recent record regardless of the active time-range filter (uses a separate unfiltered fetch)
+- ✅ **Status badge normalisation for all alternate units**: Normal/Borderline/High/Low badges correctly handle mmol/L → mg/dL for cholesterol/glucose/uric acid, µmol/L → mg/dL for creatinine, and g/L → g/dL for hemoglobin before comparing against reference range thresholds
+- ✅ **Conversion hints for creatinine and hemoglobin**: alternate-unit hints now appear for creatinine (mg/dL ↔ µmol/L, factor 88.42) and hemoglobin (g/dL ↔ g/L, factor 10)
+
+### Phase 3g — Extended Lab Tests (v0.4.3) 🔄
+
+- ✅ **ALT liver function test**: new lab test type `alt` (ALT / SGPT, U/L) with reference range 7–56 U/L normal (female ≤ 45), borderline ≤ 112 (female ≤ 90); gender-adjusted ranges supported
+- ✅ **ALP liver function test**: new lab test type `alp` (ALP / Alk Phos, U/L) with reference range 44–147 U/L normal, borderline ≤ 200
+- ✅ **"Liver" category in Reference Ranges tab**: ALT and ALP grouped under a new Liver section in both UIs
+- ✅ **Alternative clinical names in Reference Ranges**: each test shows its common alternative name as small muted text (e.g. SGPT under ALT, Alk Phos under ALP, A1C under HbA1c, FBS/FPG under Fasting Glucose, SCr under Creatinine, Hb/Hgb under Hemoglobin)
+- ✅ **Info icon in Reference Ranges**: a ⓘ button next to each test name reveals a brief description of what the test measures and its clinical significance (hover tooltip on React; click-to-toggle popover on HA addon)
 
 ### Phase 4 — Frontend Modernisation (v0.4.0) ✅
 
@@ -324,9 +345,14 @@ Migration steps (in order):
 |---|---|---|
 | v0.1.0 | MVP: health CRUD + Google sync + HA addon | ✅ Released |
 | v0.1.1 – v0.1.4 | HA ingress fix, HA-themed UI, cache headers, dark mode | ✅ Released |
-| v0.2.0 | Multi-user + impersonation prevention + unit tests | 🔄 In progress |
-| v0.3.0 | Trend charts for all metric types | 🔄 In progress |
-| v0.4.0 | Frontend modernisation: React 19, Tailwind v4, Router 7 | ⬜ Planned |
+| v0.2.0 | Multi-user + impersonation prevention + unit tests | ✅ Released |
+| v0.3.0 | Trend charts for all metric types | ✅ Released |
+| v0.3.2 | Hide sync UI when not connected | ✅ Released |
+| v0.3.3 | Standalone frontend modernisation (React 19, Tailwind 4, Router 7, Vite 8) | ✅ Released |
+| v0.4.0 | Gender-adjusted lab ranges + unit preferences (mg/dL ↔ mmol, kg ↔ lb) | ✅ Released |
+| v0.4.1 | HbA1c mmol/mol unit support + status badge normalisation | ✅ Released |
+| v0.4.2 | Lab chart unit normalization + Reference Ranges quality improvements | ✅ Released |
+| v0.4.3 | ALT/ALP liver function tests + Reference Ranges alt names & info icon | 🔄 In progress |
 
 ---
 
