@@ -41,6 +41,7 @@ export function normalizeForBadge(testType: string, value: number, unit: string)
   if (testType === 'hemoglobin' && unit === 'mmol/L') return Math.round(value / 0.6206 * 100) / 100
   if (testType === 'urine_creatinine' && unit === 'mmol/L')   return Math.round(value / 0.08842  * 10)  / 10
   if (testType === 'vitamin_d'        && unit === 'nmol/L')   return Math.round(value / 2.496    * 10)  / 10
+  if (testType === 'phosphate'        && unit === 'mg/dL')    return Math.round(value / 3.097    * 100) / 100
   const f = MMOL_FACTORS[testType]
   if (f && unit === 'mmol/L') return Math.round(value / f * 10) / 10
   return value
@@ -83,6 +84,12 @@ export function labConvertedHint(
   if (testType === 'vitamin_d') {
     if (storedUnit === 'nmol/L') return `(${Math.round(value / 2.496 * 10) / 10} ng/mL)`
     if (storedUnit === 'ng/mL' && prefUnit === 'mmol') return `(${Math.round(value * 2.496 * 10) / 10} nmol/L)`
+    return ''
+  }
+  // Phosphate: mmol/L ↔ mg/dL (1 mmol/L = 3.097 mg/dL)
+  if (testType === 'phosphate') {
+    if (storedUnit === 'mg/dL') return `(${Math.round(value / 3.097 * 100) / 100} mmol/L)`
+    if (storedUnit === 'mmol/L') return `(${Math.round(value * 3.097 * 10) / 10} mg/dL)`
     return ''
   }
   // Standard mg/dL ↔ mmol/L (cholesterol, triglycerides, glucose, uric acid)

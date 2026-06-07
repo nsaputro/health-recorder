@@ -22,6 +22,7 @@ const UNIT_OPTIONS: Record<string, string[]> = {
   albumin:           ['g/dL', 'g/L'],
   urine_creatinine:  ['mg/dL', 'mmol/L'],
   vitamin_d:         ['ng/mL', 'nmol/L'],
+  phosphate:         ['mmol/L', 'mg/dL'],
   other:             ['units'],
 }
 

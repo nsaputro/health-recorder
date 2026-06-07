@@ -496,6 +496,7 @@ const UNIT_OPTIONS = {
   albumin:           ['g/dL', 'g/L'],
   urine_creatinine:  ['mg/dL', 'mmol/L'],
   vitamin_d:         ['ng/mL', 'nmol/L'],
+  phosphate:         ['mmol/L', 'mg/dL'],
   other:             ['mg/dL', 'mmol/L', 'g/dL', 'g/L', '%', 'U/L', 'units'],
 };
 
@@ -521,6 +522,7 @@ function normalizeForBadge(testType, val, unit) {
   if (testType === 'hemoglobin' && unit === 'mmol/L') return Math.round(val / 0.6206 * 100) / 100;
   if (testType === 'urine_creatinine' && unit === 'mmol/L') return Math.round(val / 0.08842 * 10)  / 10;
   if (testType === 'vitamin_d'      && unit === 'nmol/L')   return Math.round(val / 2.496   * 10)  / 10;
+  if (testType === 'phosphate'      && unit === 'mg/dL')    return Math.round(val / 3.097   * 100) / 100;
   const f = MMOL_FACTORS[testType];
   if (f && unit === 'mmol/L') return Math.round(val / f * 10) / 10;
   return val;
@@ -552,6 +554,11 @@ function labConvertedHint(testType, value, storedUnit, prefUnit) {
   if (testType === 'vitamin_d') {
     if (storedUnit === 'nmol/L') return `(${Math.round(value / 2.496 * 10) / 10} ng/mL)`;
     if (storedUnit === 'ng/mL' && prefUnit === 'mmol') return `(${Math.round(value * 2.496 * 10) / 10} nmol/L)`;
+    return '';
+  }
+  if (testType === 'phosphate') {
+    if (storedUnit === 'mg/dL')   return `(${Math.round(value / 3.097 * 100) / 100} mmol/L)`;
+    if (storedUnit === 'mmol/L')  return `(${Math.round(value * 3.097 * 10)  / 10}  mg/dL)`;
     return '';
   }
   const wantsMgdl  = prefUnit === 'mg_dl';
@@ -1336,7 +1343,7 @@ async function setUnitPref(field, value) {
 const RANGE_CATEGORIES = [
   { label: 'Lipids',  types: ['cholesterol_total','cholesterol_ldl','cholesterol_hdl','triglycerides'] },
   { label: 'Glucose', types: ['glucose_fasting','glucose_random','glucose_hba1c'] },
-  { label: 'Kidney',  types: ['creatinine','egfr','uric_acid','urine_creatinine'] },
+  { label: 'Kidney',  types: ['creatinine','egfr','uric_acid','urine_creatinine','phosphate'] },
   { label: 'Blood',   types: ['hemoglobin','albumin'] },
   { label: 'Liver',   types: ['alt','alp'] },
   { label: 'Vitamins', types: ['vitamin_d'] },
@@ -1351,6 +1358,7 @@ const LAB_ALT_NAMES = {
   creatinine:       'SCr',
   egfr:             'GFR · Kidney Filtration Rate',
   urine_creatinine: 'UCr',
+  phosphate:        'Pi · Serum Phosphorus',
   hemoglobin:       'Hb · Hgb',
   albumin:          'Alb · Serum Albumin',
   alt:              'SGPT',
@@ -1370,6 +1378,7 @@ const LAB_DESCRIPTIONS = {
   creatinine:        'Waste product filtered by the kidneys. Elevated levels indicate reduced kidney function.',
   egfr:              'Estimated rate at which the kidneys filter waste from the blood. A key indicator of kidney function; values below 60 may indicate chronic kidney disease.',
   urine_creatinine:  'Amount of creatinine excreted in urine. Often paired with urine albumin to calculate the albumin-to-creatinine ratio (ACR), a key screening test for kidney damage.',
+  phosphate:         'Inorganic phosphate in the blood, regulated by the kidneys and parathyroid hormone. Low levels (hypophosphatemia) can cause weakness; high levels (hyperphosphatemia) are common in kidney disease.',
   hemoglobin:        'Protein in red blood cells that carries oxygen. Low levels indicate anemia.',
   albumin:           'Main protein produced by the liver and found in blood. Low levels can indicate liver disease, malnutrition, or protein loss through the kidneys.',
   alt:               'Liver enzyme released when liver cells are damaged. Elevated levels may indicate hepatitis, fatty liver, or other liver disease.',
