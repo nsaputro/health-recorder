@@ -692,7 +692,7 @@ async function loadAll() {
 async function loadPreferences() {
   try { S.prefs = await req('GET', 'auth/preferences'); } catch { S.prefs = { gender: 'unset', lab_unit: 'mg_dl', weight_unit: 'kg' }; }
   // Sync gender picker buttons
-  document.querySelectorAll('.gpick-btn').forEach(btn => {
+  document.querySelectorAll('#genderPicker .gpick-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.g === S.prefs.gender);
   });
   // Sync unit picker buttons
@@ -1290,7 +1290,7 @@ async function setGender(g) {
   try {
     await req('PUT', 'auth/preferences', { gender: g });
     S.prefs = { ...S.prefs, gender: g };
-    document.querySelectorAll('.gpick-btn').forEach(btn => {
+    document.querySelectorAll('#genderPicker .gpick-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.g === g);
     });
     const saved = document.getElementById('genderSaved');
