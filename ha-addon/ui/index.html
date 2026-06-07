@@ -487,13 +487,13 @@ const UNIT_OPTIONS = {
   glucose_fasting:   ['mg/dL', 'mmol/L'],
   glucose_random:    ['mg/dL', 'mmol/L'],
   glucose_hba1c:     ['%', 'mmol/mol'],
-  uric_acid:         ['mg/dL', 'mmol/L'],
+  uric_acid:         ['mg/dL', 'mmol/L', 'µmol/L'],
   creatinine:        ['mg/dL', 'μmol/L'],
   hemoglobin:        ['g/dL', 'g/L', 'mmol/L'],
   alt:               ['U/L'],
   alp:               ['U/L'],
   egfr:              ['mL/min/1.73m²'],
-  albumin:           ['g/dL', 'g/L'],
+  albumin:           ['g/dL', 'g/L', 'mg/L'],
   urine_creatinine:  ['mg/dL', 'mmol/L'],
   vitamin_d:         ['ng/mL', 'nmol/L'],
   phosphate:         ['mg/dL', 'mmol/L'],
@@ -519,7 +519,9 @@ function normalizeForBadge(testType, val, unit) {
   if (testType === 'glucose_hba1c'  && unit === 'mmol/mol') return hba1cToPercent(val);
   if (testType === 'creatinine'     && isUmolPerL(unit))    return Math.round(val / 88.42   * 100) / 100;
   if ((testType === 'hemoglobin' || testType === 'albumin') && unit === 'g/L') return Math.round(val / 10 * 100) / 100;
+  if (testType === 'albumin'    && unit === 'mg/L')    return Math.round(val / 10000   * 100) / 100;
   if (testType === 'hemoglobin' && unit === 'mmol/L') return Math.round(val / 0.6206 * 100) / 100;
+  if (testType === 'uric_acid'        && isUmolPerL(unit))  return Math.round(val / 59.48   * 100) / 100;
   if (testType === 'urine_creatinine' && unit === 'mmol/L') return Math.round(val / 0.08842 * 10)  / 10;
   if (testType === 'vitamin_d'      && unit === 'nmol/L')   return Math.round(val / 2.496   * 10)  / 10;
   if (testType === 'phosphate'      && unit === 'mg/dL')    return Math.round(val / 3.097   * 100) / 100;
@@ -541,6 +543,7 @@ function labConvertedHint(testType, value, storedUnit, prefUnit) {
   }
   if (testType === 'hemoglobin' || testType === 'albumin') {
     if (storedUnit === 'g/L')  return `(${Math.round(value / 10 * 100) / 100} g/dL)`;
+    if (testType === 'albumin' && storedUnit === 'mg/L') return `(${Math.round(value / 1000 * 10) / 10} g/L)`;
     if (testType === 'hemoglobin' && storedUnit === 'mmol/L')
       return `(${Math.round(value / 0.6206 * 100) / 100} g/dL)`;
     if (storedUnit === 'g/dL' && prefUnit === 'mmol') return `(${Math.round(value * 10 * 10) / 10} g/L)`;
@@ -561,6 +564,7 @@ function labConvertedHint(testType, value, storedUnit, prefUnit) {
     if (storedUnit === 'mmol/L')  return `(${Math.round(value * 3.097 * 10)  / 10}  mg/dL)`;
     return '';
   }
+  if (testType === 'uric_acid' && isUmolPerL(storedUnit)) return `(${Math.round(value / 59.48 * 100) / 100} mg/dL)`;
   const wantsMgdl  = prefUnit === 'mg_dl';
   const storedIsMgdl = storedUnit === 'mg/dL';
   if (wantsMgdl === storedIsMgdl) return '';
