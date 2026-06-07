@@ -54,6 +54,7 @@ const TrashIcon = () => (
 export default function LabResultsPage() {
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
+  const [lastLabDate, setLastLabDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [filterType, setFilterType] = useState('')
   const [range, setRange] = useState<{ label: RangeLabel; months: number }>({ label: '3M', months: 3 })
 
@@ -93,6 +94,7 @@ export default function LabResultsPage() {
   })
 
   const handleCreate = async (data: LabResultCreate) => {
+    setLastLabDate(data.measured_at)
     await createMutation.mutateAsync(data)
   }
 
@@ -121,7 +123,7 @@ export default function LabResultsPage() {
       {showForm && (
         <div className="card max-w-lg">
           <h2 className="text-base font-semibold mb-4">Add Lab Result</h2>
-          <LabResultForm onSubmit={handleCreate} loading={createMutation.isPending} labUnit={prefs?.lab_unit} />
+          <LabResultForm onSubmit={handleCreate} loading={createMutation.isPending} labUnit={prefs?.lab_unit} defaultValues={{ measured_at: lastLabDate }} />
         </div>
       )}
 
