@@ -29,7 +29,7 @@ export default function Dashboard() {
 
   const { data: weights = [] } = useQuery({ queryKey: ['body-metrics'], queryFn: () => bodyMetrics.list({ limit: 30 }) })
   const { data: labs = [] }    = useQuery({ queryKey: ['lab-results'],  queryFn: () => labResults.list({ limit: 200 }) })
-  const { data: vitals = [] }  = useQuery({ queryKey: ['vital-signs'],  queryFn: () => vitalSigns.list({ limit: 30 }) })
+  const { data: vitals = [] }  = useQuery({ queryKey: ['vital-signs'],  queryFn: () => vitalSigns.list({ limit: 500 }) })
   const { data: labTypes = [] }= useQuery({ queryKey: ['lab-types'],    queryFn: () => labResults.types() })
   const { data: gCred }        = useQuery({ queryKey: ['google-status'], queryFn: googleAuth.status, retry: false })
 
@@ -41,7 +41,8 @@ export default function Dashboard() {
   })
 
   const latestWeight = weights[0]
-  const latestVital  = vitals[0]
+  const latestBP = vitals.find((v) => v.systolic_bp != null && v.diastolic_bp != null)
+  const latestHR = vitals.find((v) => v.heart_rate != null)
 
   const labTypeMap = Object.fromEntries(labTypes.map((t: LabReferenceRange) => [t.test_type, t]))
 
@@ -100,17 +101,13 @@ export default function Dashboard() {
         />
         <StatCard
           label="Blood Pressure"
-          value={
-            latestVital?.systolic_bp && latestVital?.diastolic_bp
-              ? `${latestVital.systolic_bp}/${latestVital.diastolic_bp}`
-              : '—'
-          }
-          sub="mmHg"
+          value={latestBP ? `${latestBP.systolic_bp}/${latestBP.diastolic_bp}` : '—'}
+          sub={latestBP ? `mmHg · ${format(parseISO(latestBP.measured_at), 'MMM d, yyyy')}` : 'mmHg'}
         />
         <StatCard
           label="Heart Rate"
-          value={latestVital?.heart_rate ? `${latestVital.heart_rate} bpm` : '—'}
-          sub={latestVital ? format(parseISO(latestVital.measured_at), 'MMM d') : undefined}
+          value={latestHR ? `${latestHR.heart_rate} bpm` : '—'}
+          sub={latestHR ? format(parseISO(latestHR.measured_at), 'MMM d, yyyy') : undefined}
         />
       </div>
 
