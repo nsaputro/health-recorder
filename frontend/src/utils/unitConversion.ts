@@ -38,6 +38,7 @@ export function normalizeForBadge(testType: string, value: number, unit: string)
   if (testType === 'glucose_hba1c'    && unit === 'mmol/mol') return hba1cToPercent(value)
   if (testType === 'creatinine'       && isUmolPerL(unit))    return Math.round(value / 88.42    * 100) / 100
   if ((testType === 'hemoglobin' || testType === 'albumin') && unit === 'g/L') return Math.round(value / 10 * 100) / 100
+  if (testType === 'hemoglobin' && unit === 'mmol/L') return Math.round(value / 0.6206 * 100) / 100
   if (testType === 'urine_creatinine' && unit === 'mmol/L')   return Math.round(value / 0.08842  * 10)  / 10
   if (testType === 'vitamin_d'        && unit === 'nmol/L')   return Math.round(value / 2.496    * 10)  / 10
   const f = MMOL_FACTORS[testType]
@@ -64,8 +65,11 @@ export function labConvertedHint(
     return ''
   }
   // Hemoglobin / Albumin: g/L ↔ g/dL (1 g/dL = 10 g/L)
+  // Hemoglobin only: mmol/L ↔ g/dL (1 g/dL = 0.6206 mmol/L)
   if (testType === 'hemoglobin' || testType === 'albumin') {
     if (storedUnit === 'g/L')  return `(${Math.round(value / 10 * 100) / 100} g/dL)`
+    if (testType === 'hemoglobin' && storedUnit === 'mmol/L')
+      return `(${Math.round(value / 0.6206 * 100) / 100} g/dL)`
     if (storedUnit === 'g/dL' && prefUnit === 'mmol') return `(${Math.round(value * 10 * 10) / 10} g/L)`
     return ''
   }
