@@ -980,8 +980,9 @@ document.getElementById('lrFrm').addEventListener('submit', async e => {
       notes:       document.getElementById('lr_notes').value || null,
     });
     showAlert('lrAlert','success','✓ Result saved!');
+    const savedDate = document.getElementById('lr_at').value;
     e.target.reset();
-    document.getElementById('lr_at').value = now();
+    document.getElementById('lr_at').value = savedDate;
     await Promise.all([
       load('labs', buildUrl('health/lab-results', S.range)),
       load('allLabs', 'health/lab-results?limit=500'),
