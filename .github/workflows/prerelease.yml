@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write    # push tag + create GitHub release
+  contents: write    # push tag
   packages: write    # push to ghcr.io
 
 jobs:
@@ -98,53 +98,3 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/${{ matrix.arch }}-health_recorder:cache,mode=max
 
-  # ── Create GitHub pre-release ─────────────────────────────────────────────────
-  github-prerelease:
-    name: Create GitHub Pre-Release
-    runs-on: ubuntu-latest
-    needs: [check-version, build-and-push]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.check-version.outputs.tag }}
-
-      - name: Publish pre-release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.check-version.outputs.version }}
-          TAG: ${{ needs.check-version.outputs.tag }}
-          REPO: ${{ github.repository }}
-        run: |
-          cat > /tmp/notes.md << EOF
-          ## Pre-release ${TAG}
-
-          This is a **developer pre-release** for testing before the stable release.
-          Regular users will not see this as an available update.
-
-          ### Install in Home Assistant (dev channel)
-
-          1. Go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories**
-          2. Add: \`https://github.com/${REPO}\`
-             *(if already added for the stable addon, skip this step)*
-          3. Find **Health Recorder (dev)** → **Install** → **Start**
-          4. The **Health (dev)** panel appears in your sidebar
-
-          The dev addon (\`health_recorder_dev\`) runs on port **8100** and can run
-          **alongside** the stable addon without any conflicts.
-
-          For the Google OAuth callback use:
-          \`http://<your-ha-ip>:8100/auth/google/callback\`
-
-          ### Pre-built images
-
-          | Architecture | Image |
-          |---|---|
-          | amd64   | \`ghcr.io/${REPO}/amd64-health_recorder:${VERSION}\`   |
-          | aarch64 | \`ghcr.io/${REPO}/aarch64-health_recorder:${VERSION}\` |
-          EOF
-
-          gh release create "${TAG}" \
-            --title "Health Recorder ${TAG} (pre-release)" \
-            --prerelease \
-            --notes-file /tmp/notes.md \
-            --verify-tag
