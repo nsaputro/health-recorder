@@ -38,7 +38,9 @@ export function normalizeForBadge(testType: string, value: number, unit: string)
   if (testType === 'glucose_hba1c'    && unit === 'mmol/mol') return hba1cToPercent(value)
   if (testType === 'creatinine'       && isUmolPerL(unit))    return Math.round(value / 88.42    * 100) / 100
   if ((testType === 'hemoglobin' || testType === 'albumin') && unit === 'g/L') return Math.round(value / 10 * 100) / 100
+  if (testType === 'albumin'    && unit === 'mg/L')    return Math.round(value / 10000   * 100) / 100
   if (testType === 'hemoglobin' && unit === 'mmol/L') return Math.round(value / 0.6206 * 100) / 100
+  if (testType === 'uric_acid'        && isUmolPerL(unit))    return Math.round(value / 59.48    * 100) / 100
   if (testType === 'urine_creatinine' && unit === 'mmol/L')   return Math.round(value / 0.08842  * 10)  / 10
   if (testType === 'vitamin_d'        && unit === 'nmol/L')   return Math.round(value / 2.496    * 10)  / 10
   if (testType === 'phosphate'        && unit === 'mg/dL')    return Math.round(value / 3.097    * 100) / 100
@@ -67,8 +69,10 @@ export function labConvertedHint(
   }
   // Hemoglobin / Albumin: g/L ↔ g/dL (1 g/dL = 10 g/L)
   // Hemoglobin only: mmol/L ↔ g/dL (1 g/dL = 0.6206 mmol/L)
+  // Albumin only: mg/L ↔ g/L (1 g/L = 1000 mg/L)
   if (testType === 'hemoglobin' || testType === 'albumin') {
     if (storedUnit === 'g/L')  return `(${Math.round(value / 10 * 100) / 100} g/dL)`
+    if (testType === 'albumin' && storedUnit === 'mg/L') return `(${Math.round(value / 1000 * 10) / 10} g/L)`
     if (testType === 'hemoglobin' && storedUnit === 'mmol/L')
       return `(${Math.round(value / 0.6206 * 100) / 100} g/dL)`
     if (storedUnit === 'g/dL' && prefUnit === 'mmol') return `(${Math.round(value * 10 * 10) / 10} g/L)`
@@ -92,6 +96,8 @@ export function labConvertedHint(
     if (storedUnit === 'mmol/L') return `(${Math.round(value * 3.097 * 10) / 10} mg/dL)`
     return ''
   }
+  // Uric acid: µmol/L ↔ mg/dL (1 mg/dL = 59.48 µmol/L)
+  if (testType === 'uric_acid' && isUmolPerL(storedUnit)) return `(${Math.round(value / 59.48 * 100) / 100} mg/dL)`
   // Standard mg/dL ↔ mmol/L (cholesterol, triglycerides, glucose, uric acid)
   const wantsMgdl = prefUnit === 'mg_dl'
   const storedIsMgdl = storedUnit === 'mg/dL'
