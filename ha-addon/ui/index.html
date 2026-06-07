@@ -1414,9 +1414,9 @@ function renderRanges() {
           : '<span style="color:var(--text-hint)">—</span>';
         const altName = LAB_ALT_NAMES[r.test_type] ? `<div style="font-size:11px;color:var(--text-hint);margin-top:1px">${LAB_ALT_NAMES[r.test_type]}</div>` : '';
         const desc = LAB_DESCRIPTIONS[r.test_type];
-        const infoEl = desc ? `<div style="position:relative;display:inline-block"><button class="info-btn" onclick="toggleInfo('${r.test_type}',event)" aria-label="Info about ${r.display_name}">ⓘ</button><div id="rinfo-${r.test_type}" class="info-popup hidden">${desc}</div></div>` : '';
+        const infoEl = desc ? `<span style="position:relative;display:inline-block"><button class="info-btn" onclick="toggleInfo('${r.test_type}',event)" aria-label="Info about ${r.display_name}">ⓘ</button><div id="rinfo-${r.test_type}" class="info-popup hidden">${desc}</div></span>` : '';
         return `<tr>
-          <td><div style="display:flex;align-items:flex-start;gap:2px"><div><strong>${r.display_name}</strong>${altName}</div>${infoEl}</div></td>
+          <td><strong>${r.display_name}</strong>${infoEl}${altName}</td>
           <td style="color:var(--text-secondary)">${refRangeText(rr)}</td>
           <td>${latestCell}</td>
         </tr>`;
