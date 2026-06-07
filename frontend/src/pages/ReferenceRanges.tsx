@@ -7,8 +7,8 @@ import { resolveRangeForDisplay, labConvertedHint, normalizeForBadge } from '../
 const CATEGORIES: { label: string; types: string[] }[] = [
   { label: 'Lipids',    types: ['cholesterol_total', 'cholesterol_ldl', 'cholesterol_hdl', 'triglycerides'] },
   { label: 'Glucose',   types: ['glucose_fasting', 'glucose_random', 'glucose_hba1c'] },
-  { label: 'Kidney',    types: ['creatinine', 'egfr', 'uric_acid', 'urine_creatinine', 'phosphate'] },
-  { label: 'Blood',     types: ['hemoglobin', 'albumin'] },
+  { label: 'Kidney',    types: ['creatinine', 'egfr', 'uric_acid', 'urine_creatinine', 'albumin', 'phosphate'] },
+  { label: 'Blood',     types: ['hemoglobin'] },
   { label: 'Liver',     types: ['alt', 'alp'] },
   { label: 'Vitamins',  types: ['vitamin_d'] },
 ]
@@ -24,7 +24,7 @@ const LAB_ALT_NAMES: Record<string, string> = {
   urine_creatinine:  'UCr',
   phosphate:         'Pi · Serum Phosphorus',
   hemoglobin:        'Hb · Hgb',
-  albumin:           'Alb · Serum Albumin',
+  albumin:           'MAU · Microalbumine',
   alt:               'SGPT',
   alp:               'Alk Phos',
   vitamin_d:         '25-OH · Calcidiol',
@@ -44,7 +44,7 @@ const LAB_DESCRIPTIONS: Record<string, string> = {
   urine_creatinine:  'Amount of creatinine excreted in urine. Often paired with urine albumin to calculate the albumin-to-creatinine ratio (ACR), a key screening test for kidney damage.',
   phosphate:         'Inorganic phosphate in the blood, regulated by the kidneys and parathyroid hormone. Low levels (hypophosphatemia) can cause weakness; high levels (hyperphosphatemia) are common in kidney disease.',
   hemoglobin:        'Protein in red blood cells that carries oxygen. Low levels indicate anemia.',
-  albumin:           'Main protein produced by the liver and found in blood. Low levels can indicate liver disease, malnutrition, or protein loss through the kidneys.',
+  albumin:           'Albumin excreted in urine. Even small elevations (microalbuminuria, 30–300 mg/L) are an early marker of kidney damage, especially in diabetes and hypertension. Values above 300 mg/L indicate macroalbuminuria.',
   alt:               'Liver enzyme released when liver cells are damaged. Elevated levels may indicate hepatitis, fatty liver, or other liver disease. Also reported as ALAT. Units U/L and IU/L are equivalent.',
   alp:               'Enzyme found in the liver and bone. Elevated levels can signal liver disease, bile duct obstruction, or bone disorders. Units U/L and IU/L are equivalent.',
   vitamin_d:         'Fat-soluble vitamin essential for bone health, immune function, and calcium absorption. Deficiency is common and linked to bone loss, fatigue, and weakened immunity.',

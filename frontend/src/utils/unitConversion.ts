@@ -37,8 +37,7 @@ const isUmolPerL = (u: string) => u === 'µmol/L' || u === 'μmol/L'
 export function normalizeForBadge(testType: string, value: number, unit: string): number {
   if (testType === 'glucose_hba1c'    && unit === 'mmol/mol') return hba1cToPercent(value)
   if (testType === 'creatinine'       && isUmolPerL(unit))    return Math.round(value / 88.42    * 100) / 100
-  if ((testType === 'hemoglobin' || testType === 'albumin') && unit === 'g/L') return Math.round(value / 10 * 100) / 100
-  if (testType === 'albumin'    && unit === 'mg/L')    return Math.round(value / 10000   * 100) / 100
+  if (testType === 'hemoglobin' && unit === 'g/L')    return Math.round(value / 10    * 100) / 100
   if (testType === 'hemoglobin' && unit === 'mmol/L') return Math.round(value / 0.6206 * 100) / 100
   if (testType === 'uric_acid'        && isUmolPerL(unit))    return Math.round(value / 59.48    * 100) / 100
   if (testType === 'urine_creatinine' && unit === 'mmol/L')   return Math.round(value / 0.08842  * 10)  / 10
@@ -67,14 +66,10 @@ export function labConvertedHint(
     if (storedUnit === 'mg/dL' && prefUnit === 'mmol') return `(${Math.round(value * 88.42)} µmol/L)`
     return ''
   }
-  // Hemoglobin / Albumin: g/L ↔ g/dL (1 g/dL = 10 g/L)
-  // Hemoglobin only: mmol/L ↔ g/dL (1 g/dL = 0.6206 mmol/L)
-  // Albumin only: mg/L ↔ g/L (1 g/L = 1000 mg/L)
-  if (testType === 'hemoglobin' || testType === 'albumin') {
-    if (storedUnit === 'g/L')  return `(${Math.round(value / 10 * 100) / 100} g/dL)`
-    if (testType === 'albumin' && storedUnit === 'mg/L') return `(${Math.round(value / 1000 * 10) / 10} g/L)`
-    if (testType === 'hemoglobin' && storedUnit === 'mmol/L')
-      return `(${Math.round(value / 0.6206 * 100) / 100} g/dL)`
+  // Hemoglobin: g/L ↔ g/dL (1 g/dL = 10 g/L); mmol/L ↔ g/dL (1 g/dL = 0.6206 mmol/L)
+  if (testType === 'hemoglobin') {
+    if (storedUnit === 'g/L')    return `(${Math.round(value / 10 * 100) / 100} g/dL)`
+    if (storedUnit === 'mmol/L') return `(${Math.round(value / 0.6206 * 100) / 100} g/dL)`
     if (storedUnit === 'g/dL' && prefUnit === 'mmol') return `(${Math.round(value * 10 * 10) / 10} g/L)`
     return ''
   }
@@ -171,8 +166,8 @@ export function resolveRangeForDisplay(r: LabReferenceRange, labUnit: 'mg_dl' | 
     return { ...r, unit: 'nmol/L', low: cv(r.low, 2.496, 10), normal_max: cv(r.normal_max, 2.496, 10), borderline_max: cv(r.borderline_max, 2.496, 10) }
   }
 
-  // Albumin / Hemoglobin: g/dL → g/L (1 g/dL = 10 g/L)
-  if (r.test_type === 'hemoglobin' || r.test_type === 'albumin') {
+  // Hemoglobin: g/dL → g/L (1 g/dL = 10 g/L)
+  if (r.test_type === 'hemoglobin') {
     return { ...r, unit: 'g/L', low: cv(r.low, 10, 10), normal_max: cv(r.normal_max, 10, 10), borderline_max: cv(r.borderline_max, 10, 10) }
   }
 
