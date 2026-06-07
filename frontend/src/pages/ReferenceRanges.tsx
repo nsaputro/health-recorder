@@ -7,9 +7,10 @@ import { convertRangeToMmol, labConvertedHint, normalizeForBadge } from '../util
 const CATEGORIES: { label: string; types: string[] }[] = [
   { label: 'Lipids',    types: ['cholesterol_total', 'cholesterol_ldl', 'cholesterol_hdl', 'triglycerides'] },
   { label: 'Glucose',   types: ['glucose_fasting', 'glucose_random', 'glucose_hba1c'] },
-  { label: 'Kidney',    types: ['creatinine', 'uric_acid'] },
-  { label: 'Blood',     types: ['hemoglobin'] },
+  { label: 'Kidney',    types: ['creatinine', 'egfr', 'uric_acid', 'urine_creatinine'] },
+  { label: 'Blood',     types: ['hemoglobin', 'albumin'] },
   { label: 'Liver',     types: ['alt', 'alp'] },
+  { label: 'Vitamins',  types: ['vitamin_d'] },
 ]
 
 const LAB_ALT_NAMES: Record<string, string> = {
@@ -19,9 +20,13 @@ const LAB_ALT_NAMES: Record<string, string> = {
   cholesterol_ldl:   'Bad Cholesterol',
   cholesterol_hdl:   'Good Cholesterol',
   creatinine:        'SCr',
+  egfr:              'GFR · Kidney Filtration Rate',
+  urine_creatinine:  'UCr',
   hemoglobin:        'Hb · Hgb',
+  albumin:           'Alb · Serum Albumin',
   alt:               'SGPT',
   alp:               'Alk Phos',
+  vitamin_d:         '25-OH · Calcidiol',
 }
 
 const LAB_DESCRIPTIONS: Record<string, string> = {
@@ -34,9 +39,13 @@ const LAB_DESCRIPTIONS: Record<string, string> = {
   glucose_hba1c:     'Reflects average blood glucose over 2–3 months. A standard diabetes management marker.',
   uric_acid:         'Waste product from purine metabolism. Elevated levels can cause gout and kidney stones.',
   creatinine:        'Waste product filtered by the kidneys. Elevated levels indicate reduced kidney function.',
+  egfr:              'Estimated rate at which the kidneys filter waste from the blood. A key indicator of kidney function; values below 60 may indicate chronic kidney disease.',
+  urine_creatinine:  'Amount of creatinine excreted in urine. Often paired with urine albumin to calculate the albumin-to-creatinine ratio (ACR), a key screening test for kidney damage.',
   hemoglobin:        'Protein in red blood cells that carries oxygen. Low levels indicate anemia.',
+  albumin:           'Main protein produced by the liver and found in blood. Low levels can indicate liver disease, malnutrition, or protein loss through the kidneys.',
   alt:               'Liver enzyme released when liver cells are damaged. Elevated levels may indicate hepatitis, fatty liver, or other liver disease.',
   alp:               'Enzyme found in the liver and bone. Elevated levels can signal liver disease, bile duct obstruction, or bone disorders.',
+  vitamin_d:         'Fat-soluble vitamin essential for bone health, immune function, and calcium absorption. Deficiency is common and linked to bone loss, fatigue, and weakened immunity.',
 }
 
 function refRangeText(r: LabReferenceRange): string {

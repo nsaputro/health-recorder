@@ -56,6 +56,10 @@ LAB_TEST_UNITS: dict[str, str] = {
     "hemoglobin":        "g/dL",
     "alt":               "U/L",
     "alp":               "U/L",
+    "egfr":             "mL/min/1.73m²",
+    "albumin":          "g/dL",
+    "urine_creatinine": "mg/dL",
+    "vitamin_d":        "ng/mL",
     "other":             "units",
 }
 
@@ -72,6 +76,10 @@ LAB_TEST_DISPLAY: dict[str, str] = {
     "hemoglobin":        "Hemoglobin",
     "alt":               "ALT",
     "alp":               "ALP",
+    "egfr":             "eGFR",
+    "albumin":          "Albumin",
+    "urine_creatinine": "Urine Creatinine",
+    "vitamin_d":        "Vitamin D",
     "other":             "Other",
 }
 
@@ -107,6 +115,10 @@ LAB_REFERENCE_RANGES: dict[str, dict] = {
         "female": {"normal_max": 45, "borderline_max": 90},
     },
     "alp":               {"low": 44, "normal_max": 147, "borderline_max": 200},
+    "egfr":             {"low": 60, "normal_max": 999, "borderline_max": 999, "higher_better": True},
+    "albumin":          {"low": 3.5, "normal_max": 5.0, "borderline_max": 5.5},
+    "urine_creatinine": {"low": 20, "normal_max": 300,  "borderline_max": 370},
+    "vitamin_d":        {"low": 30, "normal_max": 100,  "borderline_max": 100},
 }
 
 

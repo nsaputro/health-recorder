@@ -19,9 +19,15 @@ class LabTestType(str, enum.Enum):
     # Liver function
     ALT = "alt"
     ALP = "alp"
-    # Other
+    # Kidney (extended)
     CREATININE = "creatinine"
+    EGFR = "egfr"
+    ALBUMIN = "albumin"
+    URINE_CREATININE = "urine_creatinine"
+    # Other
     HEMOGLOBIN = "hemoglobin"
+    # Vitamins
+    VITAMIN_D = "vitamin_d"
     OTHER = "other"
 
 
