@@ -133,7 +133,7 @@ export default function ReferenceRangesPage() {
                                 >
                                   ⓘ
                                 </button>
-                                <div className="invisible group-hover:visible group-focus-within:visible absolute left-0 top-5 z-50 w-56 p-3 rounded-lg bg-white border border-gray-200 shadow-lg text-xs text-gray-600 font-normal whitespace-normal">
+                                <div className="invisible group-hover:visible group-focus-within:visible absolute left-0 top-5 z-50 w-64 p-3 rounded-lg bg-white border border-gray-200 shadow-lg text-xs text-gray-600 font-normal whitespace-normal">
                                   {LAB_DESCRIPTIONS[r.test_type]}
                                 </div>
                               </div>
