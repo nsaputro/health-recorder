@@ -467,7 +467,7 @@ tr:hover td{background:var(--hover-bg)}
    State
 ══════════════════════════════════════════════════════════════════ */
 const S = {
-  weights: [], labs: [], vitals: [], allLabs: [],
+  weights: [], labs: [], vitals: [], allLabs: [], allVitals: [],
   labTypes: [], labTypeMap: {},
   google: null,
   prefs: { gender: 'unset', lab_unit: 'mg_dl', weight_unit: 'kg' },
@@ -675,10 +675,11 @@ async function loadAll() {
   await loadPreferences();  // must complete before loadLabTypes uses gender
   await Promise.allSettled([
     loadHAUser(),
-    load('weights', buildUrl('health/body-metrics', S.range)),
-    load('vitals',  buildUrl('health/vital-signs',  S.range)),
-    load('labs',    buildUrl('health/lab-results',  S.range)),
-    load('allLabs', 'health/lab-results?limit=500'),
+    load('weights',   buildUrl('health/body-metrics', S.range)),
+    load('vitals',    buildUrl('health/vital-signs',  S.range)),
+    load('labs',      buildUrl('health/lab-results',  S.range)),
+    load('allLabs',   'health/lab-results?limit=500'),
+    load('allVitals', 'health/vital-signs?limit=500'),
     loadLabTypes(),
     loadGoogle(),
   ]);
@@ -720,6 +721,8 @@ function render(key) {
   } else if (key==='vitals') {
     renderVitals();
     if (S.activeTab==='vitals') { buildBpChart(S.vitals); buildHrChart(S.vitals); }
+  } else if (key==='allVitals') {
+    renderOverview();
   }
 }
 
@@ -750,7 +753,9 @@ async function loadGoogle() {
    Overview
 ══════════════════════════════════════════════════════════════════ */
 function renderOverview() {
-  const w = S.weights[0], v = S.vitals[0];
+  const w  = S.weights[0];
+  const bp = S.allVitals.find(v => v.systolic_bp && v.diastolic_bp);
+  const hr = S.allVitals.find(v => v.heart_rate);
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat">
       <div class="stat-lbl">Latest Weight</div>
@@ -764,13 +769,13 @@ function renderOverview() {
     </div>
     <div class="stat">
       <div class="stat-lbl">Blood Pressure</div>
-      <div class="stat-val">${v?.systolic_bp&&v?.diastolic_bp ? v.systolic_bp+'/'+v.diastolic_bp : '—'}</div>
-      <div class="stat-sub">${v ? 'mmHg · '+fmt(v.measured_at) : 'No data yet'}</div>
+      <div class="stat-val">${bp ? bp.systolic_bp+'/'+bp.diastolic_bp : '—'}</div>
+      <div class="stat-sub">${bp ? 'mmHg · '+fmt(bp.measured_at) : 'No data yet'}</div>
     </div>
     <div class="stat">
       <div class="stat-lbl">Heart Rate</div>
-      <div class="stat-val">${v?.heart_rate ?? '—'}</div>
-      <div class="stat-sub">${v?.heart_rate ? 'bpm' : 'No data yet'}</div>
+      <div class="stat-val">${hr?.heart_rate ?? '—'}</div>
+      <div class="stat-sub">${hr ? 'bpm · '+fmt(hr.measured_at) : 'No data yet'}</div>
     </div>
   `;
   const recent = S.labs.slice(0,8);
@@ -1026,7 +1031,7 @@ async function delRec(type, id) {
     await req('DELETE',`health/${type}/${id}`);
     if      (type==='body-metrics') { S.weights = S.weights.filter(r=>r.id!==id); renderWeights(); }
     else if (type==='lab-results')  { S.labs = S.labs.filter(r=>r.id!==id); S.allLabs = S.allLabs.filter(r=>r.id!==id); renderLabs(); }
-    else                            { S.vitals  = S.vitals.filter(r=>r.id!==id);  renderVitals(); }
+    else                            { S.vitals = S.vitals.filter(r=>r.id!==id); S.allVitals = S.allVitals.filter(r=>r.id!==id); renderVitals(); }
     renderOverview();
   } catch(e) { alert('Delete failed: '+e.message); }
 }
