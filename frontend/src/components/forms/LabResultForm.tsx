@@ -15,7 +15,7 @@ const UNIT_OPTIONS: Record<string, string[]> = {
   uric_acid:         ['mg/dL', 'mmol/L'],
   glucose_hba1c:     ['%', 'mmol/mol'],
   creatinine:        ['mg/dL', 'µmol/L'],
-  hemoglobin:        ['g/dL', 'g/L'],
+  hemoglobin:        ['g/dL', 'g/L', 'mmol/L'],
   alt:               ['U/L'],
   alp:               ['U/L'],
   egfr:              ['mL/min/1.73m²'],
