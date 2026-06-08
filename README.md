@@ -20,6 +20,15 @@ The HA addon is the primary way to run Health Recorder. It appears as a **Health
 - **Google sync** — optional Google Health + Sheets sync, per user
 - **Persistent storage** — data lives at `/data/health_recorder.db`, survives addon updates
 
+### Screenshots
+
+<table>
+<tr>
+<td><img src="docs/screenshots/lab-result-form.png" width="260" alt="Add Lab Result form"/><br/><sub>Add Lab Result</sub></td>
+<td><img src="docs/screenshots/reference-ranges.png" width="260" alt="Lab Reference Ranges"/><br/><sub>Reference Ranges tab</sub></td>
+</tr>
+</table>
+
 ### Installation
 
 1. In Home Assistant go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories**
