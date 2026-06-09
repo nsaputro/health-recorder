@@ -24,6 +24,7 @@ class LabTestType(str, enum.Enum):
     EGFR = "egfr"
     ALBUMIN = "albumin"
     URINE_CREATININE = "urine_creatinine"
+    PHOSPHATE = "phosphate"
     # Other
     HEMOGLOBIN = "hemoglobin"
     # Vitamins
@@ -100,6 +101,7 @@ class SyncLog(Base):
     __tablename__ = "sync_logs"
 
     id = Column(Integer, primary_key=True, index=True)
+    ha_user_id = Column(String(128), nullable=False, index=True, server_default="")
     sync_type = Column(String(32), nullable=False)   # "google_health" | "google_sheets"
     record_type = Column(String(32), nullable=False) # "body_metric" | "lab_result" | "vital_sign"
     record_id = Column(Integer, nullable=False)

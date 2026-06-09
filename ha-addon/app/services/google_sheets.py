@@ -39,13 +39,15 @@ def _fmt(v) -> str:
 
 
 def _log(db: Session, sync_type: str, record_type: str, record_id: int,
-         status: str, message: Optional[str] = None) -> None:
+         status: str, message: Optional[str] = None,
+         ha_user_id: str = "") -> None:
     db.add(SyncLog(
         sync_type=sync_type,
         record_type=record_type,
         record_id=record_id,
         status=status,
         message=message,
+        ha_user_id=ha_user_id,
     ))
     db.commit()
 
@@ -133,10 +135,10 @@ def sync_body_metric(record: BodyMetric, db: Session, ha_user_id: str = "") -> b
             _append_row(service, ss_id, "Body Metrics", row)
         record.synced_to_sheets = True
         db.commit()
-        _log(db, "google_sheets", "body_metric", record.id, "success")
+        _log(db, "google_sheets", "body_metric", record.id, "success", ha_user_id=ha_user_id)
         return True
     except Exception as e:
-        _log(db, "google_sheets", "body_metric", record.id, "error", str(e))
+        _log(db, "google_sheets", "body_metric", record.id, "error", str(e), ha_user_id=ha_user_id)
         return False
 
 
@@ -162,10 +164,10 @@ def sync_lab_result(record: LabResult, db: Session, ha_user_id: str = "") -> boo
             _append_row(service, ss_id, "Lab Results", row)
         record.synced_to_sheets = True
         db.commit()
-        _log(db, "google_sheets", "lab_result", record.id, "success")
+        _log(db, "google_sheets", "lab_result", record.id, "success", ha_user_id=ha_user_id)
         return True
     except Exception as e:
-        _log(db, "google_sheets", "lab_result", record.id, "error", str(e))
+        _log(db, "google_sheets", "lab_result", record.id, "error", str(e), ha_user_id=ha_user_id)
         return False
 
 
@@ -190,10 +192,10 @@ def sync_vital_sign(record: VitalSign, db: Session, ha_user_id: str = "") -> boo
             _append_row(service, ss_id, "Vital Signs", row)
         record.synced_to_sheets = True
         db.commit()
-        _log(db, "google_sheets", "vital_sign", record.id, "success")
+        _log(db, "google_sheets", "vital_sign", record.id, "success", ha_user_id=ha_user_id)
         return True
     except Exception as e:
-        _log(db, "google_sheets", "vital_sign", record.id, "error", str(e))
+        _log(db, "google_sheets", "vital_sign", record.id, "error", str(e), ha_user_id=ha_user_id)
         return False
 
 
