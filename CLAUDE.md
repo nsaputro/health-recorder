@@ -203,8 +203,10 @@ All supported test types, their display names, default units, and clinical refer
 1. Validates the input version matches `ha-addon/NEXT_VERSION`
 2. Creates and pushes the git tag (`config.yaml` is **not** touched here)
 3. Builds and pushes Docker images to `ghcr.io/nsaputro/health-recorder/{arch}-health_recorder`
-4. Creates a GitHub release with install instructions
-5. Opens an auto-generated `chore/post-release-X.Y.Z` PR that:
+4. Creates a GitHub release with auto-generated notes (install instructions live in the
+   README; post-release chore PRs are excluded from the notes via the `post-release`
+   label and `.github/release.yml`)
+5. Opens an auto-generated `chore/post-release-X.Y.Z` PR (labelled `post-release`) that:
    - Stamps `ha-addon/config.yaml` with the released version (so HA offers the update)
    - Bumps `ha-addon/NEXT_VERSION` to the next patch version
    - Resets `ha-addon-dev/config.yaml` to `{NEXT}b1`
