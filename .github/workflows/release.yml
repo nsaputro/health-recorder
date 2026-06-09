@@ -265,6 +265,9 @@ jobs:
           VERSION: ${{ needs.prepare-release.outputs.version }}
           NEXT: ${{ steps.next.outputs.next_version }}
         run: |
+          # Ensure the post-release label exists (idempotent)
+          gh label create "post-release" --color "e4e669" --description "Post-release housekeeping — excluded from release notes" 2>/dev/null || true
+
           # Skip if a PR for this branch already exists (re-run safety)
           EXISTING=$(gh pr list --head "chore/post-release-${VERSION}" --json number --jq '.[0].number')
           if [ -n "$EXISTING" ]; then
@@ -274,6 +277,7 @@ jobs:
           gh pr create \
             --base main \
             --head "chore/post-release-${VERSION}" \
+            --label "post-release" \
             --title "chore: post-release ${VERSION} — bump to ${NEXT}" \
             --body "Automated post-release housekeeping after **v${VERSION}** was published.
 
