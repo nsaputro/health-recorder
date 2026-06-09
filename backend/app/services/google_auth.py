@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timezone
 from typing import Optional
 
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
@@ -99,6 +100,23 @@ def get_credentials(db: Session) -> Optional[Credentials]:
         scopes=settings.GOOGLE_SCOPES,
         expiry=expiry,
     )
+
+    # Refresh proactively and persist the new token, so the stored credential
+    # doesn't go stale (the API client refreshes in memory only).
+    if creds.expired and creds.refresh_token:
+        try:
+            creds.refresh(Request())
+            row.access_token = creds.token
+            new_expiry = creds.expiry
+            if new_expiry and new_expiry.tzinfo is None:
+                new_expiry = new_expiry.replace(tzinfo=timezone.utc)
+            row.token_expiry = new_expiry
+            db.commit()
+        except Exception:
+            # Refresh failure (revoked/offline) is reported by the API call
+            # downstream, where it is logged per record.
+            pass
+
     return creds
 
 

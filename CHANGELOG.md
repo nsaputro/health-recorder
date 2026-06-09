@@ -8,6 +8,21 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+### Fixed
+- **Google sync crash**: every sync attempt failed with an internal error because the
+  sync audit log was written with a user ID field that didn't exist in the database.
+  The `sync_logs` table now stores `ha_user_id` (migration runs automatically), and
+  Google Sheets sync logs record the user as well.
+- **Stale Google tokens**: refreshed OAuth access tokens are now persisted back to the
+  database instead of being refreshed in memory on every request after expiry.
+- **HTML injection in addon UI**: user-entered lab names, the Google account name/email,
+  and the OAuth error query parameter are now HTML-escaped before rendering.
+
+### Added
+- **Input validation**: lab results reject unknown test types and negative values;
+  vital signs reject non-positive values and blood pressure readings where systolic
+  is not greater than diastolic.
+
 ## [0.4.5] - 2026-06-07
 
 ### Added

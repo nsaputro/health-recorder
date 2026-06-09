@@ -140,6 +140,20 @@ class LabResultCreate(BaseModel):
     lab_name: Optional[str] = None
     notes: Optional[str] = None
 
+    @field_validator("test_type")
+    @classmethod
+    def known_test_type(cls, v: str) -> str:
+        if v not in LAB_TEST_UNITS:
+            raise ValueError(f"Unknown test_type '{v}'")
+        return v
+
+    @field_validator("value")
+    @classmethod
+    def value_not_negative(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("Value must not be negative")
+        return v
+
     @model_validator(mode="after")
     def set_default_unit(self) -> "LabResultCreate":
         if not self.unit:
@@ -176,6 +190,16 @@ class VitalSignCreate(BaseModel):
     def at_least_one_value(self) -> "VitalSignCreate":
         if self.systolic_bp is None and self.diastolic_bp is None and self.heart_rate is None:
             raise ValueError("At least one of systolic_bp, diastolic_bp, or heart_rate is required")
+        for field in ("systolic_bp", "diastolic_bp", "heart_rate"):
+            v = getattr(self, field)
+            if v is not None and v <= 0:
+                raise ValueError(f"{field} must be positive")
+        if (
+            self.systolic_bp is not None
+            and self.diastolic_bp is not None
+            and self.systolic_bp <= self.diastolic_bp
+        ):
+            raise ValueError("systolic_bp must be greater than diastolic_bp")
         return self
 
 

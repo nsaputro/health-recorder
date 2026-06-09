@@ -43,6 +43,7 @@ def _migrate(engine):
         "CREATE TABLE IF NOT EXISTS user_preferences (id INTEGER PRIMARY KEY, ha_user_id TEXT NOT NULL DEFAULT '', gender TEXT NOT NULL DEFAULT 'unset', created_at DATETIME, updated_at DATETIME)",
         "ALTER TABLE user_preferences ADD COLUMN lab_unit TEXT NOT NULL DEFAULT 'mg_dl'",
         "ALTER TABLE user_preferences ADD COLUMN weight_unit TEXT NOT NULL DEFAULT 'kg'",
+        "ALTER TABLE sync_logs ADD COLUMN ha_user_id TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE body_metrics RENAME COLUMN synced_to_fit TO synced_to_google",
         "ALTER TABLE lab_results RENAME COLUMN synced_to_fit TO synced_to_google",
         "ALTER TABLE vital_signs RENAME COLUMN synced_to_fit TO synced_to_google",

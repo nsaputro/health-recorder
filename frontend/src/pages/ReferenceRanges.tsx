@@ -79,8 +79,10 @@ export default function ReferenceRangesPage() {
     queryFn: () => labApi.types(gender),
   })
 
+  // Shares the ['lab-results', …] prefix so mutations on the Lab Results page
+  // (which invalidate ['lab-results']) refresh this query too.
   const { data: allResults = [] } = useQuery({
-    queryKey: ['lab-results-all'],
+    queryKey: ['lab-results', 'all'],
     queryFn: () => labApi.list({ limit: 500 }),
   })
 

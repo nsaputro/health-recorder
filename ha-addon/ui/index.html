@@ -618,6 +618,12 @@ async function req(method, url, body) {
   return d;
 }
 
+// HTML-escape — use for any user-/external-sourced string interpolated into innerHTML
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function fmt(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
@@ -865,7 +871,7 @@ function renderLabs() {
       <td>${S.labTypeMap[r.test_type]?.display_name??r.test_type}</td>
       <td><strong>${r.value} ${r.unit}</strong>${hint?`<span style="color:var(--text-hint);font-size:11px;margin-left:4px">${hint}</span>`:''}${S.labTypeMap[r.test_type]?`<div class="ref-range">${refRangeText(S.labTypeMap[r.test_type],true)}</div>`:''}</td>
       <td>${labBadge(r.test_type,r.value,r.unit)}</td>
-      <td style="color:var(--text-secondary)">${r.lab_name??'—'}</td>
+      <td style="color:var(--text-secondary)">${r.lab_name?esc(r.lab_name):'—'}</td>
       ${ss?`<td>${syncBadges(r.synced_to_google,r.synced_to_sheets)}</td>`:''}
       <td><div class="act">
         ${ss?`<button onclick="syncRec('lab-results',${r.id})">Sync</button>`:''}
@@ -918,10 +924,10 @@ function renderGoogle() {
     label.style.fontWeight = '500';
     sec.innerHTML = `
       <div class="g-row">
-        <div class="g-avatar">${(g.user_name||g.user_email)[0].toUpperCase()}</div>
+        <div class="g-avatar">${esc((g.user_name||g.user_email)[0].toUpperCase())}</div>
         <div class="g-info">
-          <div class="g-name">${g.user_name??g.user_email}</div>
-          <div class="g-email">${g.user_email}</div>
+          <div class="g-name">${esc(g.user_name??g.user_email)}</div>
+          <div class="g-email">${esc(g.user_email)}</div>
         </div>
         ${b('success','Connected')}
       </div>
@@ -1474,7 +1480,7 @@ function handleParams() {
   }
   if (p.get('google_error')) {
     go('settings');
-    showAlert('settingsAlert','error','✗ Google error: '+p.get('google_error'));
+    showAlert('settingsAlert','error','✗ Google error: '+esc(p.get('google_error')));
     history.replaceState({},'',location.pathname);
   }
 }

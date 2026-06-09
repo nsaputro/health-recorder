@@ -24,6 +24,7 @@ class LabTestType(str, enum.Enum):
     EGFR = "egfr"
     ALBUMIN = "albumin"
     URINE_CREATININE = "urine_creatinine"
+    PHOSPHATE = "phosphate"
     # Other
     HEMOGLOBIN = "hemoglobin"
     # Vitamins
