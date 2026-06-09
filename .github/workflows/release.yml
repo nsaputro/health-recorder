@@ -130,42 +130,6 @@ jobs:
             --generate-notes \
             --verify-tag
 
-      - name: Append install instructions to release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.prepare-release.outputs.version }}
-          TAG: ${{ needs.prepare-release.outputs.tag }}
-          REPO: ${{ github.repository }}
-        run: |
-          BODY=$(gh release view "${TAG}" --json body -q .body)
-          gh release edit "${TAG}" --notes "${BODY}
-
-          ---
-
-          ## 🏠 Installation (Home Assistant)
-
-          1. Go to **Settings → Add-ons → Store → ⋮ → Repositories**
-          2. Add: \`https://github.com/${REPO}\`
-          3. Install **Health Recorder** and start it
-          4. The **Health** panel appears in your HA sidebar
-
-          ## 🐳 Pre-built Docker images (ghcr.io)
-
-          | Architecture | Image |
-          |---|---|
-          | amd64   | \`ghcr.io/${REPO}/amd64-health_recorder:${VERSION}\`   |
-          | aarch64 | \`ghcr.io/${REPO}/aarch64-health_recorder:${VERSION}\` |
-
-          ## 🖥️ Standalone (Docker Compose)
-
-          \`\`\`bash
-          git clone https://github.com/${REPO}
-          cd health-recorder
-          cp backend/.env.example backend/.env   # add Google credentials
-          docker compose up --build
-          # Frontend: http://localhost:5173
-          # Backend API: http://localhost:8000/docs
-          \`\`\`"
 
   # ── Post-release PR: stamp config.yaml, bump NEXT_VERSION, update CHANGELOG ───
   create-post-release-pr:
