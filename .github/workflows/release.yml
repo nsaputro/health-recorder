@@ -7,6 +7,7 @@ permissions:
   contents: write       # commit, tag, push
   packages: write       # push to ghcr.io
   pull-requests: write  # open post-release PR
+  issues: write         # create the post-release label
 
 jobs:
   # ── Validate & tag ────────────────────────────────────────────────────────────
@@ -129,7 +130,6 @@ jobs:
             --title "Health Recorder v${VERSION}" \
             --generate-notes \
             --verify-tag
-
 
   # ── Post-release PR: stamp config.yaml, bump NEXT_VERSION, update CHANGELOG ───
   create-post-release-pr:
@@ -265,15 +265,16 @@ jobs:
           VERSION: ${{ needs.prepare-release.outputs.version }}
           NEXT: ${{ steps.next.outputs.next_version }}
         run: |
-          # Ensure the post-release label exists (idempotent)
-          gh label create "post-release" --color "e4e669" --description "Post-release housekeeping — excluded from release notes" 2>/dev/null || true
-
           # Skip if a PR for this branch already exists (re-run safety)
           EXISTING=$(gh pr list --head "chore/post-release-${VERSION}" --json number --jq '.[0].number')
           if [ -n "$EXISTING" ]; then
             echo "PR #${EXISTING} already exists for chore/post-release-${VERSION} — skipping creation."
             exit 0
           fi
+
+          # Ensure the post-release label exists (--force updates it if it already does)
+          gh label create "post-release" --color "e4e669" --description "Post-release housekeeping — excluded from release notes" --force || true
+
           gh pr create \
             --base main \
             --head "chore/post-release-${VERSION}" \

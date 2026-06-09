@@ -36,6 +36,9 @@ The HA addon is the primary way to run Health Recorder. It appears as a **Health
 3. Find **Health Recorder** → **Install** → **Start**
 4. The **Health** panel appears in your sidebar
 
+Installation uses pre-built Docker images from
+`ghcr.io/nsaputro/health-recorder/{amd64,aarch64}-health_recorder` — no local build needed.
+
 ### Google Sync (optional)
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), create an OAuth 2.0 Client ID (Web application) with redirect URI:
