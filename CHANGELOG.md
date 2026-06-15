@@ -22,6 +22,10 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 - **Input validation**: lab results reject unknown test types and negative values;
   vital signs reject non-positive values and blood pressure readings where systolic
   is not greater than diastolic.
+- **Reference Ranges → Lab Results navigation**: clicking a latest result value in the
+  Reference Ranges tab navigates directly to the Lab Results tab (React) or panel (HA addon)
+  with that test type pre-selected in both the filter and the chart dropdown, so the full
+  history and trend chart are shown immediately.
 
 ## [0.4.5] - 2026-06-07
 
