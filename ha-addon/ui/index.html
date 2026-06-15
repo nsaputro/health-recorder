@@ -314,7 +314,7 @@ tr:hover td{background:var(--hover-bg)}
   </div>
   <div class="card">
     <div class="chart-hdr" style="flex-wrap:wrap;gap:8px">
-      <div class="card-title" style="margin-bottom:0">Lab Trend</div>
+      <div class="card-title" style="margin-bottom:0">Lab Results</div>
       <div class="range-bar">
         <button class="range-btn" data-months="1" onclick="setRange(1)">1M</button>
         <button class="range-btn active" data-months="3" onclick="setRange(3)">3M</button>
@@ -324,19 +324,12 @@ tr:hover td{background:var(--hover-bg)}
       </div>
     </div>
     <div class="filter-row" style="margin-top:8px">
-      <select id="labChartType" onchange="onLabChartTypeChange()"><option value="">Select test type to chart…</option></select>
+      <select id="labChartType" onchange="onLabChartTypeChange()"><option value="">All test types</option></select>
     </div>
     <canvas id="labChart" style="display:none;margin-top:8px"></canvas>
     <div id="labChartEmpty" style="display:none"></div>
     <div class="tstat-row" id="labStats"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Lab Results</div>
-    <div class="filter-row">
-      <select id="labFilter" onchange="renderLabs()"><option value="">All test types</option></select>
-      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('labFilter').value='';renderLabs()">Clear</button>
-    </div>
-    <div id="labTbl" class="loading">Loading…</div>
+    <div id="labTbl" class="loading" style="margin-top:8px">Loading…</div>
   </div>
 </section>
 
@@ -783,12 +776,10 @@ async function loadLabTypes() {
     S.labTypes = await req('GET', 'health/lab-types' + g);
     S.labTypeMap = Object.fromEntries(S.labTypes.map(t=>[t.test_type, t]));
     const sel      = document.getElementById('lr_type');
-    const filt     = document.getElementById('labFilter');
     const chartSel = document.getElementById('labChartType');
     S.labTypes.forEach(t => {
-      sel.innerHTML       += `<option value="${t.test_type}">${t.display_name}</option>`;
-      filt.innerHTML      += `<option value="${t.test_type}">${t.display_name}</option>`;
-      chartSel.innerHTML  += `<option value="${t.test_type}">${t.display_name}</option>`;
+      sel.innerHTML      += `<option value="${t.test_type}">${t.display_name}</option>`;
+      chartSel.innerHTML += `<option value="${t.test_type}">${t.display_name}</option>`;
     });
     if (S.labTypes[0]) onTypeChange();
   } catch(e) { console.warn('labTypes', e); }
@@ -869,7 +860,7 @@ function renderWeights() {
    Lab results table
 ══════════════════════════════════════════════════════════════════ */
 function renderLabs() {
-  const f = document.getElementById('labFilter').value;
+  const f = document.getElementById('labChartType').value;
   const rows = f ? S.labs.filter(r=>r.test_type===f) : S.labs;
   const el = document.getElementById('labTbl');
   if (!rows.length) { el.innerHTML='<div class="empty">No results yet.</div>'; return; }
@@ -1292,6 +1283,7 @@ function buildLabChart(data, testType) {
 function onLabChartTypeChange() {
   S.activeLab = document.getElementById('labChartType').value;
   buildLabChart(S.labs, S.activeLab);
+  renderLabs();
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1349,7 +1341,7 @@ async function setGender(g) {
     const prevMap = S.labTypeMap;
     S.labTypeMap = {};
     // Clear and repopulate dropdowns
-    ['lr_type','labFilter','labChartType'].forEach(id => {
+    ['lr_type','labChartType'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       const first = el.querySelector('option');
