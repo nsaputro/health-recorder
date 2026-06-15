@@ -695,12 +695,11 @@ function go(tab) {
   else if (tab==='ranges') renderRanges();
 }
 
-function goToLab(testType) {
-  const filt = document.getElementById('labFilter');
-  if (filt) { filt.value = testType; }
+async function goToLab(testType) {
   const chartSel = document.getElementById('labChartType');
   if (chartSel) { chartSel.value = testType; }
   S.activeLab = testType;
+  await setRange(0);
   go('labs');
   renderLabs();
 }
