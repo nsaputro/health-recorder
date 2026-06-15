@@ -129,16 +129,15 @@ export default function LabResultsPage() {
         </div>
       )}
 
-      {/* Filter + chart card */}
+      {/* Single filter card — controls chart + table */}
       <div className="card">
-        <div className="flex flex-wrap items-center gap-4 mb-4">
-          <h2 className="text-base font-semibold">Trend</h2>
+        <div className="flex flex-wrap items-center gap-4">
           <select
             className="input max-w-xs"
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
           >
-            <option value="">Select test type to chart…</option>
+            <option value="">All test types</option>
             {labTypes.map((t: LabReferenceRange) => (
               <option key={t.test_type} value={t.test_type}>{t.display_name}</option>
             ))}
@@ -147,9 +146,15 @@ export default function LabResultsPage() {
             value={range.label}
             onChange={(label, months) => setRange({ label, months })}
           />
+          {filterType && (
+            <button className="text-xs text-blue-600 hover:underline" onClick={() => setFilterType('')}>
+              Clear
+            </button>
+          )}
         </div>
-        {filterType && chartRecords.length > 0 ? (
-          <>
+
+        {filterType && chartRecords.length > 0 && (
+          <div className="mt-4">
             <LabResultChart
               data={chartRecords}
               referenceRange={typeMap[filterType]}
@@ -159,21 +164,17 @@ export default function LabResultsPage() {
               values={sortedAsc.map((r) => r.value)}
               unit={typeMap[filterType]?.unit ?? chartRecords[0]?.unit ?? ''}
             />
-          </>
-        ) : filterType ? (
-          <p className="text-gray-400 text-sm">No records for this test type in the selected period.</p>
-        ) : null}
+          </div>
+        )}
+        {filterType && chartRecords.length === 0 && (
+          <p className="text-gray-400 text-sm mt-4">No records for this test type in the selected period.</p>
+        )}
       </div>
 
       {/* Table — edge-to-edge within card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 pt-6 pb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">All Results ({records.length})</h2>
-          {filterType && (
-            <button className="text-xs text-blue-600 hover:underline" onClick={() => setFilterType('')}>
-              Clear filter
-            </button>
-          )}
+        <div className="px-6 pt-6 pb-4">
+          <h2 className="text-base font-semibold">Results ({records.length})</h2>
         </div>
         {isLoading ? (
           <p className="px-6 pb-6 text-gray-400">Loading…</p>
