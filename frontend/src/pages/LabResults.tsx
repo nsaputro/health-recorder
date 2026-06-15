@@ -58,7 +58,9 @@ export default function LabResultsPage() {
   const [showForm, setShowForm] = useState(false)
   const [lastLabDate, setLastLabDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [filterType, setFilterType] = useState(() => searchParams.get('type') ?? '')
-  const [range, setRange] = useState<{ label: RangeLabel; months: number }>({ label: '3M', months: 3 })
+  const [range, setRange] = useState<{ label: RangeLabel; months: number }>(
+    () => searchParams.get('type') ? { label: 'All', months: 0 } : { label: '3M', months: 3 }
+  )
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['lab-results', filterType, range.months],
