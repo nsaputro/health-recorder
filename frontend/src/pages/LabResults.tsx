@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { labResults as api, userPrefs } from '../api/client'
@@ -53,9 +54,10 @@ const TrashIcon = () => (
 
 export default function LabResultsPage() {
   const qc = useQueryClient()
+  const [searchParams] = useSearchParams()
   const [showForm, setShowForm] = useState(false)
   const [lastLabDate, setLastLabDate] = useState(format(new Date(), 'yyyy-MM-dd'))
-  const [filterType, setFilterType] = useState('')
+  const [filterType, setFilterType] = useState(() => searchParams.get('type') ?? '')
   const [range, setRange] = useState<{ label: RangeLabel; months: number }>({ label: '3M', months: 3 })
 
   const { data: records = [], isLoading } = useQuery({

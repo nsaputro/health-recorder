@@ -341,6 +341,7 @@ Migration steps (in order):
 - ✅ **"Liver" category in Reference Ranges tab**: ALT and ALP grouped under a new Liver section in both UIs
 - ✅ **Alternative clinical names in Reference Ranges**: each test shows its common alternative name as small muted text (e.g. SGPT under ALT, Alk Phos under ALP, A1C under HbA1c, FBS/FPG under Fasting Glucose, SCr under Creatinine, Hb/Hgb under Hemoglobin)
 - ✅ **Info icon in Reference Ranges**: a ⓘ button next to each test name reveals a brief description of what the test measures and its clinical significance (hover tooltip on React; click-to-toggle popover on HA addon)
+- ✅ **Reference Ranges → Lab Results navigation**: clicking a latest result value in the Reference Ranges tab navigates to the Lab Results tab/panel with that test type pre-selected in the filter and chart dropdown
 
 ### HA Sensor Entities + Reminders (v0.5.x) ⬜
 
