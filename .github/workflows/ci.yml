@@ -7,6 +7,7 @@ on:
       - dev
       - "claude/**"
       - "feature/**"
+      - "fix/**"
   pull_request:
     branches:
       - main
@@ -15,11 +16,20 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Bot-created PRs (post-release chore) are exempt from all checks so they can
+# be merged without waiting for CI. The ci-pass job enforces this exemption while
+# still being the single required status check for branch protection.
+#
+# Each job carries:
+#   if: github.event_name != 'pull_request' || github.actor != 'github-actions[bot]'
+# so the job is *skipped* (not failed) on bot PRs. ci-pass then exits 0 for those.
+
 jobs:
   # ── Lint ────────────────────────────────────────────────────────────────────
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v4
 
@@ -92,6 +102,7 @@ jobs:
   python-syntax:
     name: Python syntax check
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v4
 
@@ -136,6 +147,7 @@ jobs:
     name: Unit tests
     runs-on: ubuntu-latest
     needs: [python-syntax]
+    if: github.event_name != 'pull_request' || github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v4
 
@@ -168,6 +180,7 @@ jobs:
   frontend-build:
     name: Frontend lint & build
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v4
 
@@ -195,6 +208,7 @@ jobs:
     name: Docker build test (amd64)
     runs-on: ubuntu-latest
     needs: [lint, python-syntax, test]
+    if: github.event_name != 'pull_request' || github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v4
 
@@ -212,3 +226,40 @@ jobs:
           tags: health-recorder-ha:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ── Required gate ────────────────────────────────────────────────────────────
+  # This is the ONLY job to add as a required status check in branch protection.
+  # It passes immediately for bot-created PRs (post-release chore); for all other
+  # PRs it verifies every upstream job succeeded.
+  ci-pass:
+    name: CI Pass
+    runs-on: ubuntu-latest
+    needs: [lint, python-syntax, test, frontend-build, build-test]
+    if: always()
+    steps:
+      - name: Check results
+        env:
+          ACTOR: ${{ github.actor }}
+          EVENT: ${{ github.event_name }}
+          R_LINT: ${{ needs.lint.result }}
+          R_SYNTAX: ${{ needs.python-syntax.result }}
+          R_TEST: ${{ needs.test.result }}
+          R_FRONTEND: ${{ needs.frontend-build.result }}
+          R_BUILD: ${{ needs.build-test.result }}
+        run: |
+          if [[ "$EVENT" == "pull_request" && "$ACTOR" == "github-actions[bot]" ]]; then
+            echo "Bot-created PR — CI checks are not required"
+            exit 0
+          fi
+          failed=0
+          for job_result in "$R_LINT" "$R_SYNTAX" "$R_TEST" "$R_FRONTEND" "$R_BUILD"; do
+            if [[ "$job_result" != "success" ]]; then
+              echo "A required job did not succeed (result: $job_result)"
+              failed=1
+            fi
+          done
+          if [[ $failed -eq 1 ]]; then
+            echo "One or more required CI checks failed or were skipped."
+            exit 1
+          fi
+          echo "All CI checks passed."

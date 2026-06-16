@@ -218,3 +218,33 @@ All supported test types, their display names, default units, and clinical refer
 2. Go to **Actions → Release → Run workflow** (no inputs needed — version is read from `NEXT_VERSION`)
 3. Review and merge the auto-created `chore/post-release-X.Y.Z` PR
    (check `ha-addon/CHANGELOG.md` looks good before merging)
+
+## Branch Protection & Required Status Checks
+
+The branch protection rule for `main` should require exactly **one** status check: **`CI Pass`**.
+
+### Why only `CI Pass`?
+
+Each real CI job (`Lint`, `Python syntax check`, `Unit tests`, `Frontend lint & build`,
+`Docker build test`) carries a condition that **skips the job** when the PR is created by
+`github-actions[bot]` (i.e. the auto-generated `chore/post-release-X.Y.Z` PR). GitHub
+treats skipped jobs as neither passing nor failing, which would block merge if they were
+listed individually as required checks.
+
+The `CI Pass` gate job solves this:
+- It runs with `if: always()` so it is never skipped.
+- For **bot-created PRs** it exits 0 immediately — the post-release PR can be merged
+  without waiting for CI.
+- For **all other PRs** it checks that every upstream job succeeded; if any failed or was
+  unexpectedly skipped, it exits 1 and blocks the merge.
+
+### Setting up branch protection (one-time, in GitHub UI)
+
+1. Go to **Settings → Branches → Add rule** (or edit the existing `main` rule).
+2. Enable **Require status checks to pass before merging**.
+3. Search for and add `CI Pass` as the only required check.
+4. Optionally enable **Require branches to be up to date before merging**.
+5. Save.
+
+> Do **not** add the individual job names (`Lint`, `Unit tests`, etc.) as required checks —
+> they will block bot PRs because they are skipped rather than passing.
