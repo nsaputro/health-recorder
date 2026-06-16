@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
@@ -62,13 +62,6 @@ export default function LabResultsPage() {
     () => searchParams.get('type') ? { label: 'All', months: 0 } : { label: '3M', months: 3 }
   )
 
-  // When navigating here from Reference Ranges (same route, different search params),
-  // the lazy init above won't re-run — sync state explicitly when the URL type changes.
-  useEffect(() => {
-    const type = searchParams.get('type') ?? ''
-    setFilterType(type)
-    if (type) setRange({ label: 'All', months: 0 })
-  }, [searchParams])
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ['lab-results', filterType, range.months],
