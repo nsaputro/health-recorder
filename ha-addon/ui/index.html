@@ -699,7 +699,9 @@ async function goToLab(testType) {
   const chartSel = document.getElementById('labChartType');
   if (chartSel) { chartSel.value = testType; }
   S.activeLab = testType;
-  await setRange(0);
+  S.range = 0;
+  syncRangeBtns(0);
+  await load('labs', buildUrl('health/lab-results', 0));
   go('labs');
   renderLabs();
 }
