@@ -1,0 +1,14 @@
+schema: spec-driven
+
+rules:
+  proposal:
+    - "Cap proposals at <250 words with concise bullet points"
+    - "Use skip_specs: true for pure refactors"
+  specs:
+    - "Enforce 1-2 normative sentences per requirement in specs"
+    - "Use ultra-compact 1-line WHEN/THEN scenarios"
+  design:
+    - "Keep designs <300 words with bulleted decisions"
+    - "Omit designs unless architectural or breaking"
+  tasks:
+    - "Limit task checklists to 3-8 actionable checkboxes with inline verification"
