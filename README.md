@@ -158,6 +158,14 @@ docker compose up --build
 
 ---
 
+## Specifications & Contributing
+
+- **Specifications**: Core system capability specifications are defined in [`openspec/specs/`](openspec/specs/).
+- **Agent & Contributor Guidelines**: Workflows, coding conventions, container testing, and versioning policies are documented in [`AGENTS.md`](AGENTS.md).
+- **Project Roadmap**: Tracked on the [GitHub Projects Kanban board](https://github.com/users/nsaputro/projects/4).
+
+---
+
 ## Project Structure
 
 ```
@@ -175,6 +183,9 @@ health-recorder/
 │   └── app/
 ├── frontend/                    # Standalone React frontend
 │   └── src/
+├── openspec/                    # OpenSpec specifications & configuration
+│   └── specs/                   # Baseline capability specifications
+├── AGENTS.md                    # Agent guidance, Kanban rules, versioning
 ├── docker-compose.yml
 ├── LICENSE
 └── README.md
@@ -185,3 +196,4 @@ health-recorder/
 ## License
 
 [MIT](LICENSE) © Nugroho Saputro
+
