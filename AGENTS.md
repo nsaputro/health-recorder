@@ -82,6 +82,33 @@ The release pipeline (`.github/workflows/release.yml`) is triggered via `workflo
 4. Creates a GitHub Release with auto-generated release notes.
 5. Automatically opens a `chore/post-release-X.Y.Z` PR that stamps `ha-addon/config.yaml`, increments `NEXT_VERSION`, resets `ha-addon-dev` to `b1`, and dates the changelog.
 
+### Pre-Release End-to-End Testing (Dev Channel)
+
+Before cutting any stable release, validate all new features and changes on the dev channel first:
+
+1. **Bump Pre-Release Version**: In your feature PR, ensure `ha-addon-dev/config.yaml` version tracks `{NEXT_VERSION}b{N}` (strictly greater than any existing tags).
+2. **Merge PR**: Merge the feature PR to `main` after CI passes.
+3. **Trigger Pre-Release Workflow**:
+   ```bash
+   gh workflow run prerelease.yml --ref main
+   ```
+   This builds and publishes multi-arch images (`{arch}-health_recorder:{version}`) to GHCR and tags `v{version}`.
+4. **Upgrade Dev Add-on in Home Assistant**:
+   Reload the repository store and upgrade the dev channel add-on (`health_recorder_dev`):
+   ```bash
+   ha store reload
+   ha apps update health_recorder_dev
+   ```
+   *(or in the HA Web UI under Settings → Add-ons → Health Recorder (dev) → Update)*.
+5. **Verify Add-on Functionality & Endpoints**:
+   - Confirm the container starts cleanly and uvicorn is listening in add-on logs.
+   - Query the unauthenticated / health endpoints on the dev port (host port `8100`):
+     ```bash
+     curl -s http://<ha-host>:8100/health/lab-types
+     ```
+   - Test Web UI ingress access via Home Assistant sidebar ("Health (dev)") and verify health metric recording, trend charts, and Google sync connectivity.
+6. **Cut Stable Release**: Once dev verification is green, trigger the `Release` workflow to publish the stable release.
+
 ---
 
 ## Repository Architecture & Conventions
@@ -178,6 +205,9 @@ npm run build
 
 ## Changelog Policy
 
-Every PR that changes addon or application behavior must update `CHANGELOG.md`:
-- Add an entry under `## [Unreleased]` following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) standards (`Added`, `Changed`, `Fixed`, `Removed`).
-- The release workflow automatically transfers unreleased changes to the release version during release cuts.
+Follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) categories: `Added`, `Changed`, `Fixed`, `Removed`.
+
+- **Root `CHANGELOG.md`**: Captures all notable repository changes, including user-facing features, developer tooling, OpenSpec specs, and CI infrastructure.
+- **Add-on `ha-addon/CHANGELOG.md` (Rendered in HA UI)**: **User-facing changes only**. This includes both HA UI / add-on configuration changes and user-accessible features such as health data tracking, metrics, units, and Google sync capabilities. Non-user-impacting changes (such as OpenSpec specifications, internal developer docs, agent workflows, and CI refactors) must **never** be added here.
+- **Conciseness & High Signal**: Keep changelog entries compact and high-signal (single-sentence bullet points). Avoid verbose narratives, debugging backstories, and diagnostic transcripts.
+- **Release Transfers**: The release workflow automatically transfers unreleased changes to the release version during release cuts and generates `ha-addon/CHANGELOG.md`.
