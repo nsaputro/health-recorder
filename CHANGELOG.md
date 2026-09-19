@@ -8,6 +8,9 @@ Versions match `ha-addon/config.yaml` and the GitHub release tags.
 
 ## [Unreleased]
 
+### Added
+- **Developer guidelines**: Documented dev channel pre-release end-to-end testing workflow and two-tier changelog rules in `AGENTS.md`.
+
 ## [0.4.7] - 2026-06-16
 
 ### Fixed
